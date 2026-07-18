@@ -10,7 +10,7 @@ backend, no tracking.
 
 | Category | Tools |
 |----------|-------|
-| **JSON** | Prettify · Minify · Validate · Sort Keys |
+| **JSON** | Prettify · Minify · Validate · Sort Keys · Compare (git-style diff) |
 | **URL**  | Editable Parser — edit any part or query param and the URL rebuilds live |
 | **Encode** | Base64 · URL · HTML escape/unescape · JWT decode |
 | **Text** | Case Converter · Slugify · Word Counter · Lorem Ipsum |
