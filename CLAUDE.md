@@ -74,5 +74,4 @@ it, exercise it, don't infer from the code. Check both light/dark themes and a ~
 
 ## Git
 
-Plain, factual commit messages. **No AI/Claude/`Co-Authored-By` attribution** — the repo owner is
-the sole author. Branch off `main`; commit and push only when asked.
+Plain, factual commit messages. Branch off `main`; commit and push only when asked.
