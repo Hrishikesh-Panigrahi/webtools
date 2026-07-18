@@ -1,76 +1,78 @@
 # CLAUDE.md
 
-Guidance for working in this repo. Keep this file short and current — it loads into every session.
-
-## What this is
-
-**webTools** — a collection of fast, 100% client-side developer utilities (JSON, URL, encoding,
-text, color, crypto, ciphers). Built with **Vite 8 + vanilla JavaScript**. No framework, no
-backend, no tracking, and **no runtime dependencies** — the built `dist/` is pure static files.
-
-## Commands
+**webTools** — 100% client-side developer utilities. **Vite 8 + vanilla JS**; no framework, no
+runtime dependencies. The built `dist/` is pure static files.
 
 ```bash
-npm install       # install dev tooling (Vite only)
 npm run dev       # dev server + hot reload at http://localhost:5173
-npm run build     # production build -> dist/
-npm run preview   # serve the production build locally
+npm run build     # production build -> dist/   (must pass before committing)
+npm run preview   # serve the production build
 ```
 
-## Architecture
+## The one pattern that matters: the tool registry
 
-```
-index.html          Entry point; loads /src/main.js as a module
-src/
-  main.js           App shell — sidebar, search, hash routing, theme toggle, sidebar collapse
-  registry.js       Single source of truth: imports every tool module, groups by category
-  dom.js            DOM helpers — h(), copyBtn(), onRunKey(), icons
-  panel.js          Reusable layouts — transformTool(), ioBox()
-  styles/
-    base.css        Theme tokens (:root / [data-theme]), reset, header, sidebar, layout
-    components.css  Tool widgets — panels, buttons, fields, diff view, etc.
-  tools/            One module per category; each exports an array of tool objects
-```
+Every tool is a plain object `{ id, category, name, title, desc, mount(body) }` living in a
+`src/tools/*` module, collected in `src/registry.js`. **Adding a tool = write the object + import
+its array in `registry.js`.** Sidebar, hash routing, search, copy buttons, and theming are all
+derived automatically — no other file changes.
 
-**Tool registry pattern.** Every tool is a plain object:
+- `id` doubles as the URL hash (`#json-compare`) and must be unique.
+- Sidebar order follows the spread order in `registry.js`; tools appear in their array order.
 
-```js
-{ id, category, name, title, desc, mount(body) }
-```
+## Helpers — use these, don't hand-roll DOM
 
-`mount(body)` builds the tool's UI into the given element. To add a tool: write/extend a module
-in `src/tools/`, then import its array in `src/registry.js` — nothing else. The sidebar, routing,
-search, copy buttons, and theming are all automatic. Use `transformTool()` for the common
-input→output shape (see README for a full example).
+`src/dom.js`
+- `h(tag, attrs, ...kids)` — element builder. Special attrs: `class`; `html` (→ innerHTML);
+  `value` (set as a **property**, not attribute); `onClick`/`onInput`/… (→ event listeners);
+  `attr: true` → bare attribute. Nullish/false children and attrs are skipped; children flatten.
+- `copyBtn(getText)` — a Copy button wired to `getText()`.
+- `onRunKey(el, fn)` — runs `fn` on ⌘/Ctrl+Enter.
 
-**Routing** is hash-based (`#tool-id`) so the site works on any static host with no server config.
-**Theming** is CSS variables switched by a `data-theme` attribute on `<html>`, persisted to
-`localStorage`. Never hardcode a color — use the tokens in `base.css`.
+`src/panel.js`
+- `transformTool({ transform, live, actionLabel, placeholder, inputLabel, outputLabel })` — the
+  standard input→output shell. `transform(text)` returns a string, or **throws `Error(msg)`** to
+  render `msg` in the error box. `live: true` runs on every keystroke with no button.
+- `ioBox(label, node, { copy })` — a labelled box wrapper.
 
-## Conventions
+Custom tools (URL parser, color, JSON diff, timestamp, number base) build their own `mount` with `h()`.
 
-Three project skills define the standards — follow them, don't restate them:
+## Platform-first — why there are no libraries
 
-- **`clean-code`** — modular, readable, self-documenting JS; descriptive names; minimal comments.
-- **`ui`** — minimal/subtle styling, theme tokens only, reuse existing components, responsive.
-- **`review-checklist`** — run before committing any change.
+Reach for built-ins; do not add dependencies for these:
+- Hashing → `crypto.subtle.digest` (**async**); UUID → `crypto.randomUUID()`.
+- URLs → `URL` / `URLSearchParams`; relative dates → `Intl.RelativeTimeFormat`.
+- Arbitrary-precision integers (number-base tool) → `BigInt`; HTML unescape → `DOMParser`.
+- JSON Compare is an LCS line-diff over both docs normalized with `sortDeep` + pretty-print, so
+  key order never registers as a difference.
 
-Quick reminders: reuse the helpers (`h`, `copyBtn`, `transformTool`, `ioBox`) before writing new
-code; use placeholders, never prefilled example values, in inputs.
+## Styling
 
-## Constraints
+- All colors are CSS custom properties defined in `styles/base.css` (`:root` and
+  `:root[data-theme="dark"]`). **Never hardcode a color** — add or reuse a token.
+- `base.css` = tokens + app shell; `components.css` = tool widgets. Both are imported from
+  `main.js` (`import './styles/base.css'`). That JS-imports-CSS is a **Vite feature, not native** —
+  going build-less would break it and require `<link>` tags instead.
+- Persisted UI state (localStorage): `webtools-theme`, `webtools-collapsed` (collapsed nav
+  groups), `webtools-sidebar` (desktop sidebar collapse).
 
-- **Client-side only.** No network calls — nothing a user types may leave the browser.
-- **No runtime dependencies.** Keep Vite the only dependency; don't add libraries for things the
-  platform already does (Web Crypto, `crypto.randomUUID`, `URL`, `Intl`, etc.).
+## Invariants
+
+- **Client-side only** — no network calls; nothing a user types may leave the browser.
+- **No runtime dependencies** — Vite stays the only entry in `package.json`.
+- **Hash routing** (`#tool-id`) so the site hosts on any static server with no config.
+- Inputs use **placeholders, never prefilled example values**.
+
+## Conventions (project skills — follow, don't restate)
+
+`clean-code` (modular, readable, few comments) · `ui` (minimal, token-driven, responsive) ·
+`review-checklist` (run before committing).
 
 ## Verifying a change
 
-`npm run build` must pass, and the affected tool must actually work when driven in the dev server —
-open it, exercise it, don't assume. Check both light and dark themes and a narrow (mobile) width.
+`npm run build` must pass **and** the affected tool must work when driven in the dev server — open
+it, exercise it, don't infer from the code. Check both light/dark themes and a ~360px width.
 
 ## Git
 
-- Commit messages are **plain and factual**. Do **not** add any AI/Claude/`Co-Authored-By`
-  attribution — commits are authored solely by the repo owner.
-- Branch off `main` for non-trivial work; commit and push only when asked.
+Plain, factual commit messages. **No AI/Claude/`Co-Authored-By` attribution** — the repo owner is
+the sole author. Branch off `main`; commit and push only when asked.
