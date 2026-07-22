@@ -37,7 +37,7 @@ src/
   registry.js       The list of every tool
   dom.js            Small DOM helpers (h, copyBtn, icons)
   panel.js          Reusable tool layouts (transformTool, ioBox)
-  style.css         Theme tokens and all styling
+  styles/           base.css (tokens + shell), components.css (widgets)
   tools/            One module per category
 ```
 
