@@ -13,6 +13,12 @@
   --radius: 8px;
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --json-key: var(--accent);
+  --json-string: #0a7d33;
+  --json-number: #b5850b;
+  --json-bool: #8250df;
+  --json-null: var(--text-dim);
+  --json-punct: var(--text-dim);
 }
 :root[data-theme="dark"] {
   --bg: #0f1216;
@@ -25,9 +31,24 @@
   --accent-weak: #1a2233;
   --ok: #3fb950;
   --bad: #f85149;
+  --json-string: #7ee787;
+  --json-number: #ffab70;
+  --json-bool: #d2a8ff;
 }
 
 * { box-sizing: border-box; }
+
+/* Modern, theme-aware scrollbars (sidebar, main, JSON tree, textareas). */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-dim) 40%, transparent) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-dim) 40%, transparent);
+  border: 3px solid transparent; border-radius: 8px; background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text-dim) 70%, transparent); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+
 html, body { height: 100%; }
 body {
   margin: 0;
