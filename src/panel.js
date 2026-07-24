@@ -1,5 +1,6 @@
 // Reusable tool-panel layouts. Each returns a `mount(body)` function.
-import { h, copyBtn, onRunKey } from './dom.js';
+import { h, copyBtn, pasteBtn, downloadBtn, onRunKey, icons } from './dom.js';
+import { encodeState } from './state.js';
 
 /**
  * The most common shape: one input textarea -> one output textarea via `transform`.
@@ -11,6 +12,9 @@ import { h, copyBtn, onRunKey } from './dom.js';
  * @param {string} [opts.inputLabel]
  * @param {string} [opts.outputLabel]
  * @param {boolean} [opts.live]        run on every keystroke (no button)
+ * @param {string} [opts.downloadName] filename for the output download button
+ * @param {string} [opts.pipeTo]       tool id to send the output to (adds a swap button)
+ * @param {string} [opts.pipeLabel]    label for that swap button
  * @param {(s:string)=>string} opts.transform
  */
 export function transformTool(opts) {
@@ -20,6 +24,9 @@ export function transformTool(opts) {
     inputLabel = 'Input',
     outputLabel = 'Output',
     live = false,
+    downloadName = 'output.txt',
+    pipeTo,
+    pipeLabel = 'Send',
     transform,
   } = opts;
 
@@ -40,15 +47,37 @@ export function transformTool(opts) {
       }
     };
 
+    // Paste replaces the input and re-runs; the input event keeps state in sync.
+    const setInput = (text) => {
+      input.value = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      run();
+    };
+
     const inBox = h('div', { class: 'io-box' },
-      h('div', { class: 'io-label' }, inputLabel),
+      h('div', { class: 'io-label-row' },
+        h('span', { class: 'io-label' }, inputLabel),
+        pasteBtn(setInput),
+      ),
       input,
       error,
+    );
+
+    const outActions = h('div', { class: 'io-actions' });
+    if (pipeTo) {
+      outActions.append(h('button', {
+        class: 'btn-copy', type: 'button', html: icons.swap + ' ' + pipeLabel, title: 'Send output to ' + pipeTo,
+        onClick: () => { location.hash = pipeTo + '?' + encodeState([output.value]); },
+      }));
+    }
+    outActions.append(
+      downloadBtn(() => downloadName, () => output.value),
+      copyBtn(() => output.value),
     );
     const outBox = h('div', { class: 'io-box' },
       h('div', { class: 'io-label-row' },
         h('span', { class: 'io-label' }, outputLabel),
-        copyBtn(() => output.value),
+        outActions,
       ),
       output,
     );

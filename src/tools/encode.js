@@ -25,30 +25,30 @@ export default [
   {
     id: 'b64-encode', category: 'Encode', name: 'Base64 Encode', title: 'Base64 Encode',
     desc: 'Encode text to Base64 (UTF-8 safe).',
-    mount: transformTool({ actionLabel: 'Encode', live: true, placeholder: 'hello world', transform: utf8ToB64 }),
+    mount: transformTool({ actionLabel: 'Encode', live: true, placeholder: 'hello world', transform: utf8ToB64, pipeTo: 'b64-decode', pipeLabel: 'Decode' }),
   },
   {
     id: 'b64-decode', category: 'Encode', name: 'Base64 Decode', title: 'Base64 Decode',
     desc: 'Decode Base64 back to text.',
     mount: transformTool({
       actionLabel: 'Decode', live: true, placeholder: 'aGVsbG8gd29ybGQ=',
-      transform: (s) => b64ToUtf8(s),
+      transform: (s) => b64ToUtf8(s), pipeTo: 'b64-encode', pipeLabel: 'Encode',
     }),
   },
   {
     id: 'url-encode', category: 'Encode', name: 'URL Encode', title: 'URL Encode',
     desc: 'Percent-encode a string for safe use in a URL.',
-    mount: transformTool({ live: true, placeholder: 'name=John Doe & co', transform: (s) => encodeURIComponent(s) }),
+    mount: transformTool({ live: true, placeholder: 'name=John Doe & co', transform: (s) => encodeURIComponent(s), pipeTo: 'url-decode', pipeLabel: 'Decode' }),
   },
   {
     id: 'url-decode', category: 'Encode', name: 'URL Decode', title: 'URL Decode',
     desc: 'Decode a percent-encoded string.',
-    mount: transformTool({ live: true, placeholder: 'name%3DJohn%20Doe', transform: (s) => decodeURIComponent(s) }),
+    mount: transformTool({ live: true, placeholder: 'name%3DJohn%20Doe', transform: (s) => decodeURIComponent(s), pipeTo: 'url-encode', pipeLabel: 'Encode' }),
   },
   {
     id: 'html-encode', category: 'Encode', name: 'HTML Escape', title: 'HTML Escape',
     desc: 'Escape characters that are special in HTML (&, <, >, ", \').',
-    mount: transformTool({ live: true, placeholder: '<div class="x">Tom & Jerry</div>', transform: (s) => s.replace(/[&<>"']/g, (c) => htmlEscapes[c]) }),
+    mount: transformTool({ live: true, placeholder: '<div class="x">Tom & Jerry</div>', transform: (s) => s.replace(/[&<>"']/g, (c) => htmlEscapes[c]), pipeTo: 'html-decode', pipeLabel: 'Unescape' }),
   },
   {
     id: 'html-decode', category: 'Encode', name: 'HTML Unescape', title: 'HTML Unescape',
@@ -59,6 +59,7 @@ export default [
         const doc = new DOMParser().parseFromString(s, 'text/html');
         return doc.documentElement.textContent;
       },
+      pipeTo: 'html-encode', pipeLabel: 'Escape',
     }),
   },
   {

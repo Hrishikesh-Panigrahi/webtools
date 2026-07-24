@@ -1,5 +1,6 @@
 import { h, copyBtn } from '../dom.js';
-import { transformTool } from '../panel.js';
+import { transformTool, ioBox } from '../panel.js';
+import { diffLines, diffSign } from '../diff.js';
 
 const words = (s) => s.trim().split(/[\s_-]+/).filter(Boolean);
 
@@ -82,8 +83,98 @@ function loremMount(body) {
   gen();
 }
 
+const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function regexMount(body) {
+  const pattern = h('input', { class: 'url-field', spellcheck: 'false', placeholder: '\\b\\w+@\\w+\\.\\w+\\b' });
+  const flags = h('input', { class: 'part-input', spellcheck: 'false', placeholder: 'gi', style: 'max-width:6rem' });
+  const test = h('textarea', { class: 'io-textarea', placeholder: 'Text to match against…', spellcheck: 'false' });
+  const error = h('div', { class: 'io-error' });
+  const info = h('div', { class: 'rx-info' });
+  const highlight = h('div', { class: 'rx-highlight' });
+
+  const run = () => {
+    error.textContent = '';
+    info.textContent = '';
+    if (!pattern.value) { highlight.textContent = test.value; return; }
+    let re;
+    try {
+      const flagStr = flags.value.includes('g') ? flags.value : flags.value + 'g';
+      re = new RegExp(pattern.value, flagStr);
+    } catch (e) {
+      error.textContent = e.message;
+      highlight.textContent = test.value;
+      return;
+    }
+    const text = test.value;
+    let out = '', last = 0, count = 0, firstGroups = null, match;
+    re.lastIndex = 0;
+    while ((match = re.exec(text)) !== null) {
+      out += escapeHtml(text.slice(last, match.index)) + '<mark class="rx-hit">' + escapeHtml(match[0]) + '</mark>';
+      last = match.index + match[0].length;
+      count++;
+      if (match.length > 1 && !firstGroups) firstGroups = match.slice(1);
+      if (match.index === re.lastIndex) re.lastIndex++; // guard against zero-length matches
+      if (count > 50000) break; // safety valve
+    }
+    out += escapeHtml(text.slice(last));
+    highlight.innerHTML = out;
+    info.textContent = `${count} ${count === 1 ? 'match' : 'matches'}`
+      + (firstGroups ? ' · groups: ' + firstGroups.map((g, i) => `$${i + 1}=${g ?? ''}`).join(', ') : '');
+  };
+
+  [pattern, flags, test].forEach((el) => el.addEventListener('input', run));
+  body.append(
+    h('div', { class: 'io-box' },
+      h('div', { class: 'io-label' }, 'Pattern'),
+      h('div', { class: 'rx-pattern-row' }, pattern, flags),
+      error,
+    ),
+    h('div', { class: 'io-box' }, h('div', { class: 'io-label' }, 'Test text'), test),
+    h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Matches'), info),
+    highlight,
+  );
+  pattern.focus();
+}
+
+function diffMount(body) {
+  const inputA = h('textarea', { class: 'io-textarea', placeholder: 'Original…', spellcheck: 'false' });
+  const inputB = h('textarea', { class: 'io-textarea', placeholder: 'Changed…', spellcheck: 'false' });
+  const result = h('div', {});
+
+  const run = () => {
+    result.innerHTML = '';
+    if (!inputA.value && !inputB.value) return;
+    const rows = diffLines(inputA.value.split('\n'), inputB.value.split('\n'));
+    const added = rows.filter((r) => r.type === 'add').length;
+    const removed = rows.filter((r) => r.type === 'del').length;
+    const summary = added || removed
+      ? h('div', { class: 'diff-summary' },
+          h('span', { class: 'diff-add-count' }, `+${added} added`),
+          h('span', { class: 'diff-del-count' }, `−${removed} removed`))
+      : h('div', { class: 'diff-summary' }, h('span', { class: 'diff-same-note' }, 'The two texts are identical.'));
+    const view = h('div', { class: 'diff-view' });
+    for (const row of rows) {
+      view.append(h('div', { class: 'diff-line diff-' + row.type },
+        h('span', { class: 'diff-sign' }, diffSign[row.type]),
+        h('span', { class: 'diff-text' }, row.text)));
+    }
+    result.append(summary, view);
+  };
+
+  inputA.addEventListener('input', run);
+  inputB.addEventListener('input', run);
+  body.append(
+    h('div', { class: 'io-grid' }, ioBox('Original', inputA), ioBox('Changed', inputB)),
+    result,
+  );
+  inputA.focus();
+}
+
 export default [
   { id: 'text-case', category: 'Text', name: 'Case Converter', title: 'Case Converter', desc: 'Convert text between UPPER, lower, Title, camelCase, snake_case, kebab-case and more.', mount: caseMount },
+  { id: 'text-regex', category: 'Text', name: 'Regex Tester', title: 'Regex Tester', desc: 'Test a regular expression against sample text with live match highlighting and capture groups.', mount: regexMount },
+  { id: 'text-diff', category: 'Text', name: 'Text Diff', title: 'Text Diff', desc: 'Line-by-line diff of two blocks of text. Green lines are added; red lines are removed.', mount: diffMount },
   {
     id: 'text-slugify', category: 'Text', name: 'Slugify', title: 'Slugify',
     desc: 'Turn any text into a clean, URL-friendly slug.',

@@ -8,7 +8,7 @@ function urlParserMount(body) {
   const error = h('div', { class: 'io-error' });
 
   const field = (key, label, placeholder = '') => {
-    const input = h('input', { class: 'part-input', spellcheck: 'false', placeholder });
+    const input = h('input', { class: 'part-input', spellcheck: 'false', placeholder, 'data-no-persist': true });
     input.addEventListener('input', rebuild);
     return { key, label, input, row: h('label', { class: 'part-row' }, h('span', { class: 'part-label' }, label), input) };
   };
@@ -24,8 +24,8 @@ function urlParserMount(body) {
   const paramRows = h('div', { class: 'param-rows' });
 
   const addParamRow = (key = '', value = '') => {
-    const k = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'key', value: key });
-    const v = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'value', value: value });
+    const k = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'key', value: key, 'data-no-persist': true });
+    const v = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'value', value: value, 'data-no-persist': true });
     const del = h('button', { class: 'btn-icon-sm', type: 'button', title: 'Remove', html: icons.trash });
     const row = h('div', { class: 'param-row' }, k, v, del);
     k.addEventListener('input', rebuild);
