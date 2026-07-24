@@ -4,13 +4,14 @@ import json from './tools/json.js';
 import encode from './tools/encode.js';
 import url from './tools/url.js';
 import text from './tools/text.js';
+import markdown from './tools/markdown.js';
 import hash from './tools/hash.js';
 import cipher from './tools/cipher.js';
 import color from './tools/color.js';
 import convert from './tools/convert.js';
 
 export const tools = [
-  ...json, ...url, ...encode, ...text, ...convert, ...color, ...hash, ...cipher,
+  ...json, ...url, ...encode, ...text, ...markdown, ...convert, ...color, ...hash, ...cipher,
 ];
 
 // Preserve first-seen category order.

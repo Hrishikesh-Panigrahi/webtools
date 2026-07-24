@@ -1,6 +1,7 @@
 import './styles/base.css';
 import './styles/components.css';
-import { h } from './dom.js';
+import { h, icons } from './dom.js';
+import { encodeState, decodeState } from './state.js';
 import { tools, categories } from './registry.js';
 
 const app = document.getElementById('app');
@@ -28,6 +29,8 @@ const main = h('main', { class: 'main' });
 
 const menuBtn = h('button', { class: 'btn-icon menu-toggle', 'aria-label': 'Menu', html: menuIcon });
 const themeBtn = h('button', { class: 'btn-icon', 'aria-label': 'Toggle theme', title: 'Toggle theme' });
+const linkBtn = h('button', { class: 'btn-icon', 'aria-label': 'Copy shareable link', title: 'Copy a link to this tool with its current input', html: icons.link });
+const helpBtn = h('button', { class: 'btn-icon', 'aria-label': 'Keyboard shortcuts', title: 'Keyboard shortcuts' }, '?');
 const setThemeIcon = () => { themeBtn.innerHTML = document.documentElement.getAttribute('data-theme') === 'dark' ? sunIcon : moonIcon; };
 setThemeIcon();
 
@@ -36,7 +39,7 @@ const header = h('header', { class: 'header' },
     menuBtn,
     h('a', { class: 'logo', href: '#' + tools[0].id }, 'webTools'),
   ),
-  h('div', { class: 'header-right' }, themeBtn),
+  h('div', { class: 'header-right' }, linkBtn, helpBtn, themeBtn),
 );
 
 const bodyWrap = h('div', { class: 'body' }, sidebar, main);
@@ -82,13 +85,90 @@ function highlightActive() {
 }
 
 // ---------- Routing ----------
-function currentId() {
-  const id = location.hash.replace(/^#/, '');
-  return byId[id] ? id : tools[0].id;
+// A hash is `#id` or `#id?s=<encoded state>` (shared links carry input state).
+function parseHash() {
+  const raw = location.hash.replace(/^#/, '');
+  const q = raw.indexOf('?');
+  const id = q === -1 ? raw : raw.slice(0, q);
+  return { id: byId[id] ? id : tools[0].id, query: q === -1 ? '' : raw.slice(q + 1) };
+}
+function currentId() { return parseHash().id; }
+
+// ---------- Tool state: persistence + shareable links ----------
+const STATE_PREFIX = 'webtools-input:';
+
+// The editable controls whose values define a tool's state (skip outputs and
+// dynamically-rebuilt fields, which restore themselves from their source).
+function editableControls(body) {
+  return [...body.querySelectorAll('input, textarea, select')].filter((el) => {
+    if (el.matches('[data-no-persist]') || el.readOnly) return false;
+    if (el.tagName === 'INPUT') {
+      return !['button', 'submit', 'reset', 'file', 'color', 'image'].includes((el.type || 'text').toLowerCase());
+    }
+    return true;
+  });
+}
+const readControl = (el) => (el.type === 'checkbox' ? el.checked : el.value);
+const writeControl = (el, v) => { if (el.type === 'checkbox') el.checked = !!v; else el.value = v; };
+const serialize = (body) => editableControls(body).map(readControl);
+
+// Apply saved values, then nudge the tool's own listeners so output recomputes.
+function applyState(body, values) {
+  const controls = editableControls(body);
+  if (!Array.isArray(values) || values.length !== controls.length) return false;
+  controls.forEach((el, i) => writeControl(el, values[i]));
+  controls.forEach((el) => {
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  // Button-driven tools compute on Ctrl+Enter — trigger it once on the first field.
+  controls[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+  return true;
 }
 
+function restoreState(body, id, query) {
+  const shared = decodeState(query);
+  if (shared && applyState(body, shared)) return;
+  const saved = localStorage.getItem(STATE_PREFIX + id);
+  if (saved) { try { applyState(body, JSON.parse(saved)); } catch { /* ignore corrupt state */ } }
+}
+
+function bindStateSaving(body, id) {
+  const save = () => {
+    try { localStorage.setItem(STATE_PREFIX + id, JSON.stringify(serialize(body))); }
+    catch { /* quota exceeded (e.g. a huge dropped file) — skip persistence */ }
+  };
+  body.addEventListener('input', save);
+  body.addEventListener('change', save);
+}
+
+// Drop a text file onto any editable textarea to load its contents.
+function wireFileDrop(body) {
+  body.querySelectorAll('textarea:not([readonly])').forEach((ta) => {
+    ta.addEventListener('dragover', (e) => { e.preventDefault(); ta.classList.add('dragover'); });
+    ta.addEventListener('dragleave', () => ta.classList.remove('dragover'));
+    ta.addEventListener('drop', (e) => {
+      e.preventDefault();
+      ta.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        ta.value = reader.result;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        // Button-driven tools (e.g. Prettify) compute on Ctrl+Enter — nudge them.
+        ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+      };
+      reader.readAsText(file);
+    });
+  });
+}
+
+let currentBody = null;
+
 function render() {
-  const tool = byId[currentId()];
+  const { id, query } = parseHash();
+  const tool = byId[id];
   document.title = `${tool.title} · webTools`;
   main.innerHTML = '';
   const body = h('div', { class: 'tool-body' });
@@ -102,6 +182,10 @@ function render() {
     ),
   );
   tool.mount(body);
+  currentBody = body;
+  restoreState(body, id, query);
+  bindStateSaving(body, id);
+  wireFileDrop(body);
   main.scrollTop = 0;
   highlightActive();
   closeSidebar();
@@ -117,6 +201,72 @@ const closeSidebar = () => { sidebar.classList.remove('open'); backdrop.classLis
 const SIDEBAR_KEY = 'webtools-sidebar';
 if (localStorage.getItem(SIDEBAR_KEY) === 'collapsed') bodyWrap.classList.add('sidebar-collapsed');
 
+// ---------- Command palette ----------
+const paletteInput = h('input', { class: 'palette-input', placeholder: 'Jump to a tool…', spellcheck: 'false' });
+const paletteList = h('div', { class: 'palette-list' });
+const palette = h('div', { class: 'overlay' }, h('div', { class: 'palette', role: 'dialog' }, paletteInput, paletteList));
+let paletteItems = [];
+let paletteSel = 0;
+
+function markPaletteSel() {
+  paletteItems.forEach((it, i) => it.el.classList.toggle('sel', i === paletteSel));
+  paletteItems[paletteSel]?.el.scrollIntoView({ block: 'nearest' });
+}
+function setPaletteSel(i) {
+  if (!paletteItems.length) return;
+  paletteSel = Math.max(0, Math.min(i, paletteItems.length - 1));
+  markPaletteSel();
+}
+function buildPalette(filter = '') {
+  paletteList.innerHTML = '';
+  paletteItems = [];
+  const q = filter.trim().toLowerCase();
+  for (const t of tools) {
+    if (q && !(t.name.toLowerCase().includes(q) || t.title.toLowerCase().includes(q) || t.category.toLowerCase().includes(q))) continue;
+    const el = h('button', { class: 'palette-item', type: 'button' },
+      h('span', { class: 'palette-name' }, t.name),
+      h('span', { class: 'palette-cat' }, t.category));
+    const idx = paletteItems.length;
+    el.addEventListener('click', () => selectPalette(t.id));
+    el.addEventListener('mousemove', () => setPaletteSel(idx));
+    paletteList.append(el);
+    paletteItems.push({ el, id: t.id });
+  }
+  if (!paletteItems.length) paletteList.append(h('div', { class: 'nav-empty' }, 'No tools match.'));
+  paletteSel = 0;
+  markPaletteSel();
+}
+const openPalette = () => { palette.classList.add('open'); paletteInput.value = ''; buildPalette(); paletteInput.focus(); };
+const closePalette = () => palette.classList.remove('open');
+function selectPalette(id) { closePalette(); location.hash = '#' + id; }
+paletteInput.addEventListener('input', () => buildPalette(paletteInput.value));
+paletteInput.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); setPaletteSel(paletteSel + 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); setPaletteSel(paletteSel - 1); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (paletteItems[paletteSel]) selectPalette(paletteItems[paletteSel].id); }
+});
+palette.addEventListener('click', (e) => { if (e.target === palette) closePalette(); });
+
+// ---------- Shortcut help ----------
+const shortcuts = [
+  ['⌘K / Ctrl K', 'Open the command palette'],
+  ['/', 'Focus the search box'],
+  ['⌘↵ / Ctrl ↵', 'Run the current tool'],
+  ['?', 'Show this help'],
+  ['Esc', 'Close a dialog'],
+];
+const help = h('div', { class: 'overlay' },
+  h('div', { class: 'help', role: 'dialog' },
+    h('h2', { class: 'help-title' }, 'Keyboard shortcuts'),
+    ...shortcuts.map(([keys, desc]) => h('div', { class: 'help-row' },
+      h('kbd', { class: 'help-keys' }, keys), h('span', {}, desc))),
+  ),
+);
+const openHelp = () => help.classList.add('open');
+const closeHelp = () => help.classList.remove('open');
+help.addEventListener('click', (e) => { if (e.target === help) closeHelp(); });
+app.append(palette, help);
+
 // ---------- Wire up ----------
 menuBtn.addEventListener('click', () => {
   if (isMobile()) {
@@ -131,11 +281,30 @@ themeBtn.addEventListener('click', () => {
   applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   setThemeIcon();
 });
+helpBtn.addEventListener('click', openHelp);
+linkBtn.addEventListener('click', async () => {
+  if (!currentBody) return;
+  const values = serialize(currentBody);
+  const hash = '#' + currentId() + (values.length ? '?' + encodeState(values) : '');
+  history.replaceState(null, '', hash);
+  try { await navigator.clipboard.writeText(location.href); } catch { /* clipboard blocked */ }
+  linkBtn.classList.add('copied');
+  clearTimeout(linkBtn._t);
+  linkBtn._t = setTimeout(() => linkBtn.classList.remove('copied'), 1200);
+});
 search.addEventListener('input', () => buildNav(search.value));
 window.addEventListener('hashchange', render);
 document.addEventListener('keydown', (e) => {
-  if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    palette.classList.contains('open') ? closePalette() : openPalette();
+  } else if (e.key === 'Escape') {
+    closePalette(); closeHelp();
+  } else if (e.key === '/' && !typing) {
     e.preventDefault(); search.focus();
+  } else if (e.key === '?' && !typing) {
+    e.preventDefault(); openHelp();
   }
 });
 
