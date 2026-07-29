@@ -231,10 +231,39 @@
 }
 .rx-hit { background: color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 3px; }
 
-/* ===================== Password generator ===================== */
-.pw-toggles { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
-.pw-toggle { display: inline-flex; align-items: center; gap: .35rem; font-size: .82rem; color: var(--text-dim); cursor: pointer; }
-.pw-toggle input { accent-color: var(--accent); }
+/* ===================== Checkbox options ===================== */
+.toggle-row { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
+.toggle { display: inline-flex; align-items: center; gap: .35rem; font-size: .82rem; color: var(--text-dim); cursor: pointer; }
+.toggle input { accent-color: var(--accent); }
+
+/* ===================== Label / value lists ===================== */
+.kv-list {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); overflow: hidden;
+}
+.kv-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  padding: .5rem .7rem; border-top: 1px solid var(--border);
+}
+.kv-row:first-child { border-top: none; }
+.kv-label { font-size: .8rem; color: var(--text-dim); }
+.kv-value { font-family: var(--mono); font-size: .82rem; text-align: right; word-break: break-word; }
+
+/* ===================== Usage meter ===================== */
+.meter {
+  height: 8px; border-radius: 999px; overflow: hidden;
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.meter-fill { height: 100%; width: 0; background: var(--accent); transition: width .15s ease; }
+.meter-fill.over { background: var(--bad); }
+
+/* ===================== Cron explainer ===================== */
+.cron-meaning {
+  padding: .7rem .8rem; min-height: 2.6rem; line-height: 1.5;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text);
+}
 
 /* ===================== Markdown preview ===================== */
 .md-preview {

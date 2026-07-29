@@ -94,6 +94,16 @@ export function downloadBtn(getName, getText) {
   return btn;
 }
 
+/**
+ * Empty a field the way a keystroke would, so live tools re-run and the shell's
+ * saved-input state clears too. Assigning `.value` alone fires no event, which
+ * left the old text in localStorage and brought it back on the next visit.
+ */
+export function clearField(el) {
+  el.value = '';
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 /** Run `fn` when Cmd/Ctrl+Enter is pressed inside `el`. */
 export function onRunKey(el, fn) {
   el.addEventListener('keydown', (e) => {

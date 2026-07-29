@@ -1,6 +1,7 @@
 // Reusable tool-panel layouts. Each returns a `mount(body)` function.
-import { h, copyBtn, pasteBtn, downloadBtn, onRunKey, icons } from './dom.js';
+import { h, copyBtn, pasteBtn, downloadBtn, clearField, onRunKey, icons } from './dom.js';
 import { encodeState } from './state.js';
+import { diffLines, diffSign } from './diff.js';
 
 /**
  * The most common shape: one input textarea -> one output textarea via `transform`.
@@ -90,7 +91,7 @@ export function transformTool(opts) {
       onRunKey(input, run);
       body.append(h('div', { class: 'tool-actions' },
         h('button', { class: 'btn btn-primary', type: 'button', onClick: run }, actionLabel),
-        h('button', { class: 'btn btn-ghost', type: 'button', onClick: () => { input.value = ''; output.value = ''; error.textContent = ''; input.focus(); } }, 'Clear'),
+        h('button', { class: 'btn btn-ghost', type: 'button', onClick: () => { clearField(input); output.value = ''; error.textContent = ''; input.focus(); } }, 'Clear'),
         h('span', { class: 'kbd-hint' }, '⌘↵ / Ctrl+↵ to run'),
       ));
     }
@@ -104,4 +105,47 @@ export function ioBox(label, node, { copy } = {}) {
     ? h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, label), copyBtn(copy))
     : h('div', { class: 'io-label' }, label);
   return h('div', { class: 'io-box' }, head, node);
+}
+
+/**
+ * The git-style diff view shared by JSON Compare and Text Diff: an added/removed
+ * summary above one colour-coded row per line.
+ * Throws Error(message) when the inputs are too large to align.
+ */
+export function diffView(fromLines, toLines, identicalNote) {
+  const rows = diffLines(fromLines, toLines);
+  const added = rows.filter((row) => row.type === 'add').length;
+  const removed = rows.filter((row) => row.type === 'del').length;
+
+  const summary = added || removed
+    ? h('div', { class: 'diff-summary' },
+        h('span', { class: 'diff-add-count' }, `+${added} added`),
+        h('span', { class: 'diff-del-count' }, `−${removed} removed`))
+    : h('div', { class: 'diff-summary' }, h('span', { class: 'diff-same-note' }, identicalNote));
+
+  const view = h('div', { class: 'diff-view' });
+  for (const row of rows) {
+    view.append(h('div', { class: 'diff-line diff-' + row.type },
+      h('span', { class: 'diff-sign' }, diffSign[row.type]),
+      h('span', { class: 'diff-text' }, row.text)));
+  }
+  return h('div', {}, summary, view);
+}
+
+/** A row of checkbox options; returns the row plus the boxes keyed by label. */
+export function toggleRow(labels, checkedByDefault = []) {
+  const boxes = {};
+  const row = h('div', { class: 'toggle-row' });
+  for (const label of labels) {
+    const box = h('input', { type: 'checkbox', ...(checkedByDefault.includes(label) ? { checked: true } : {}) });
+    boxes[label] = box;
+    row.append(h('label', { class: 'toggle' }, box, h('span', {}, label)));
+  }
+  return { row, boxes };
+}
+
+/** A label + value row for read-only figures (costs, counts, next run times). */
+export function keyValueRow(label, initial = '—') {
+  const value = h('span', { class: 'kv-value' }, initial);
+  return { row: h('div', { class: 'kv-row' }, h('span', { class: 'kv-label' }, label), value), value };
 }

@@ -1,8 +1,14 @@
 import { h, copyBtn } from '../dom.js';
-import { transformTool, ioBox } from '../panel.js';
-import { diffLines, diffSign } from '../diff.js';
+import { transformTool, ioBox, diffView, toggleRow } from '../panel.js';
 
-const words = (s) => s.trim().split(/[\s_-]+/).filter(Boolean);
+// Split on separators *and* on case boundaries, so an identifier already in one
+// convention converts to another: `parseHTTPResponse` -> parse_http_response.
+const words = (s) => s
+  .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+  .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+  .trim()
+  .split(/[\s_-]+/)
+  .filter(Boolean);
 
 const cases = {
   'UPPERCASE': (s) => s.toUpperCase(),
@@ -110,7 +116,10 @@ function regexMount(body) {
     let out = '', last = 0, count = 0, firstGroups = null, match;
     re.lastIndex = 0;
     while ((match = re.exec(text)) !== null) {
-      out += escapeHtml(text.slice(last, match.index)) + '<mark class="rx-hit">' + escapeHtml(match[0]) + '</mark>';
+      out += escapeHtml(text.slice(last, match.index));
+      // A zero-length match (e.g. `a*`) has nothing to highlight — counting it is
+      // enough; an empty <mark> would just render as a stray sliver.
+      if (match[0]) out += '<mark class="rx-hit">' + escapeHtml(match[0]) + '</mark>';
       last = match.index + match[0].length;
       count++;
       if (match.length > 1 && !firstGroups) firstGroups = match.slice(1);
@@ -140,35 +149,97 @@ function regexMount(body) {
 function diffMount(body) {
   const inputA = h('textarea', { class: 'io-textarea', placeholder: 'Original…', spellcheck: 'false' });
   const inputB = h('textarea', { class: 'io-textarea', placeholder: 'Changed…', spellcheck: 'false' });
+  const error = h('div', { class: 'io-error' });
   const result = h('div', {});
 
   const run = () => {
     result.innerHTML = '';
+    error.textContent = '';
     if (!inputA.value && !inputB.value) return;
-    const rows = diffLines(inputA.value.split('\n'), inputB.value.split('\n'));
-    const added = rows.filter((r) => r.type === 'add').length;
-    const removed = rows.filter((r) => r.type === 'del').length;
-    const summary = added || removed
-      ? h('div', { class: 'diff-summary' },
-          h('span', { class: 'diff-add-count' }, `+${added} added`),
-          h('span', { class: 'diff-del-count' }, `−${removed} removed`))
-      : h('div', { class: 'diff-summary' }, h('span', { class: 'diff-same-note' }, 'The two texts are identical.'));
-    const view = h('div', { class: 'diff-view' });
-    for (const row of rows) {
-      view.append(h('div', { class: 'diff-line diff-' + row.type },
-        h('span', { class: 'diff-sign' }, diffSign[row.type]),
-        h('span', { class: 'diff-text' }, row.text)));
+    try {
+      result.append(diffView(inputA.value.split('\n'), inputB.value.split('\n'), 'The two texts are identical.'));
+    } catch (e) {
+      error.textContent = e.message;
     }
-    result.append(summary, view);
   };
 
   inputA.addEventListener('input', run);
   inputB.addEventListener('input', run);
   body.append(
     h('div', { class: 'io-grid' }, ioBox('Original', inputA), ioBox('Changed', inputB)),
+    error,
     result,
   );
   inputA.focus();
+}
+
+const LINE_ORDERS = {
+  'Original order': null,
+  'A → Z': (a, b) => a.localeCompare(b),
+  'Z → A': (a, b) => b.localeCompare(a),
+  'Numeric': (a, b) => (Number.parseFloat(a) || 0) - (Number.parseFloat(b) || 0),
+  'Shortest first': (a, b) => a.length - b.length,
+  'Longest first': (a, b) => b.length - a.length,
+};
+
+const TRIM = 'Trim each line';
+const DROP_BLANKS = 'Drop blank lines';
+const DEDUPE = 'Remove duplicates';
+const IGNORE_CASE = 'Ignore case';
+const REVERSE = 'Reverse result';
+
+function linesMount(body) {
+  const input = h('textarea', { class: 'io-textarea tall', placeholder: 'One item per line…', spellcheck: 'false' });
+  const output = h('textarea', { class: 'io-textarea tall', readonly: true, spellcheck: 'false' });
+  const order = h('select', { class: 'select' }, ...Object.keys(LINE_ORDERS).map((label) => h('option', {}, label)));
+  const { row: options, boxes } = toggleRow([TRIM, DROP_BLANKS, DEDUPE, IGNORE_CASE, REVERSE], [TRIM, DROP_BLANKS, DEDUPE]);
+  const counts = h('div', { class: 'rx-info' });
+
+  const run = () => {
+    const original = input.value ? input.value.split('\n') : [];
+    const key = (line) => (boxes[IGNORE_CASE].checked ? line.toLowerCase() : line);
+
+    let lines = boxes[TRIM].checked ? original.map((line) => line.trim()) : [...original];
+    if (boxes[DROP_BLANKS].checked) lines = lines.filter((line) => line.trim() !== '');
+    if (boxes[DEDUPE].checked) {
+      const seen = new Set();
+      lines = lines.filter((line) => {
+        const identity = key(line);
+        if (seen.has(identity)) return false;
+        seen.add(identity);
+        return true;
+      });
+    }
+
+    const compare = LINE_ORDERS[order.value];
+    if (compare) {
+      lines.sort(boxes[IGNORE_CASE].checked ? (a, b) => compare(key(a), key(b)) : compare);
+    }
+    if (boxes[REVERSE].checked) lines.reverse();
+
+    output.value = lines.join('\n');
+    const removed = original.length - lines.length;
+    counts.textContent = original.length
+      ? `${original.length.toLocaleString()} in · ${lines.length.toLocaleString()} out · ${removed.toLocaleString()} removed`
+      : '';
+  };
+
+  input.addEventListener('input', run);
+  order.addEventListener('change', run);
+  Object.values(boxes).forEach((box) => box.addEventListener('change', run));
+
+  body.append(
+    h('div', { class: 'tool-actions' }, h('span', { class: 'io-label' }, 'Order'), order, options),
+    h('div', { class: 'io-grid' },
+      ioBox('Lines', input),
+      h('div', { class: 'io-box' },
+        h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Result'), copyBtn(() => output.value)),
+        output,
+        counts,
+      ),
+    ),
+  );
+  input.focus();
 }
 
 export default [
@@ -182,6 +253,11 @@ export default [
       live: true, placeholder: 'Hello, World! — My First Post',
       transform: (s) => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
     }),
+  },
+  {
+    id: 'text-lines', category: 'Text', name: 'Sort & Dedupe', title: 'Line Sorter & Deduplicator',
+    desc: 'Sort, trim and de-duplicate a list of lines — for cleaning up log output, ID lists and config blocks.',
+    mount: linesMount,
   },
   { id: 'text-count', category: 'Text', name: 'Word Counter', title: 'Word & Character Counter', desc: 'Live counts of characters, words, lines, sentences and UTF-8 bytes.', mount: counterMount },
   { id: 'text-lorem', category: 'Text', name: 'Lorem Ipsum', title: 'Lorem Ipsum Generator', desc: 'Generate placeholder paragraphs.', mount: loremMount },

@@ -23,6 +23,10 @@ function urlParserMount(body) {
 
   const paramRows = h('div', { class: 'param-rows' });
 
+  // `user:pass@` has no field of its own, but a pasted URL keeps it so editing
+  // any other part never silently strips the credentials.
+  let credentials = '';
+
   const addParamRow = (key = '', value = '') => {
     const k = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'key', value: key, 'data-no-persist': true });
     const v = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'value', value: value, 'data-no-persist': true });
@@ -57,7 +61,7 @@ function urlParserMount(body) {
       .join('&');
 
     urlField.value =
-      `${proto}://${host}${port ? ':' + port : ''}${path}` +
+      `${proto}://${credentials}${host}${port ? ':' + port : ''}${path}` +
       `${query ? '?' + query : ''}${frag ? '#' + frag : ''}`;
   }
 
@@ -73,6 +77,7 @@ function urlParserMount(body) {
       return;
     }
     error.textContent = '';
+    credentials = u.username ? `${u.username}${u.password ? ':' + u.password : ''}@` : '';
     parts.protocol.input.value = u.protocol.replace(/:$/, '');
     parts.host.input.value = u.hostname;
     parts.port.input.value = u.port;

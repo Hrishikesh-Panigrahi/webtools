@@ -1,6 +1,5 @@
-import { h, copyBtn, onRunKey, icons } from '../dom.js';
-import { transformTool, ioBox } from '../panel.js';
-import { diffLines, diffSign } from '../diff.js';
+import { h, copyBtn, clearField, onRunKey, icons } from '../dom.js';
+import { transformTool, ioBox, diffView } from '../panel.js';
 
 function sortDeep(value) {
   if (Array.isArray(value)) return value.map(sortDeep);
@@ -68,24 +67,11 @@ function compareMount(body) {
       return;
     }
 
-    const rows = diffLines(normalizedA.split('\n'), normalizedB.split('\n'));
-    const added = rows.filter((r) => r.type === 'add').length;
-    const removed = rows.filter((r) => r.type === 'del').length;
-
-    const summary = added || removed
-      ? h('div', { class: 'diff-summary' },
-          h('span', { class: 'diff-add-count' }, `+${added} added`),
-          h('span', { class: 'diff-del-count' }, `−${removed} removed`))
-      : h('div', { class: 'diff-summary' }, h('span', { class: 'diff-same-note' }, 'The two documents are identical.'));
-
-    const view = h('div', { class: 'diff-view' });
-    for (const row of rows) {
-      view.append(h('div', { class: 'diff-line diff-' + row.type },
-        h('span', { class: 'diff-sign' }, diffSign[row.type]),
-        h('span', { class: 'diff-text' }, row.text)));
+    try {
+      result.append(diffView(normalizedA.split('\n'), normalizedB.split('\n'), 'The two documents are identical.'));
+    } catch (e) {
+      error.textContent = e.message;
     }
-
-    result.append(summary, view);
   };
 
   onRunKey(inputA, compare);
@@ -99,7 +85,7 @@ function compareMount(body) {
       h('button', { class: 'btn btn-primary', type: 'button', onClick: compare }, 'Compare'),
       h('button', {
         class: 'btn btn-ghost', type: 'button',
-        onClick: () => { inputA.value = ''; inputB.value = ''; result.innerHTML = ''; error.textContent = ''; inputA.focus(); },
+        onClick: () => { clearField(inputA); clearField(inputB); result.innerHTML = ''; error.textContent = ''; inputA.focus(); },
       }, 'Clear'),
       h('span', { class: 'kbd-hint' }, '⌘↵ / Ctrl+↵ to compare'),
     ),
@@ -213,6 +199,7 @@ function prettifyMount(body) {
   const run = () => {
     error.textContent = '';
     tree.innerHTML = '';
+    pretty = '';
     if (!input.value.trim()) { setWide(false); return; }
     let parsed;
     try {
@@ -240,7 +227,7 @@ function prettifyMount(body) {
     ),
     h('div', { class: 'tool-actions' },
       h('button', { class: 'btn btn-primary', type: 'button', onClick: run }, 'Prettify'),
-      h('button', { class: 'btn btn-ghost', type: 'button', onClick: () => { input.value = ''; error.textContent = ''; tree.innerHTML = ''; setWide(false); input.focus(); } }, 'Clear'),
+      h('button', { class: 'btn btn-ghost', type: 'button', onClick: () => { clearField(input); error.textContent = ''; tree.innerHTML = ''; pretty = ''; setWide(false); input.focus(); } }, 'Clear'),
       h('span', { class: 'kbd-hint' }, '⌘↵ / Ctrl+↵ to run'),
     ),
   );

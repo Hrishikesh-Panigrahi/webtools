@@ -12,19 +12,28 @@ const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&l
 
 const SAFE_URL = /^(https?:|mailto:|#|\/|\.)/i;
 
-// Inline spans: split on backtick code so emphasis/link rules never touch code.
+// Code spans and links are pulled out before emphasis runs, so a URL holding
+// `_` or `*` (very common) is never mistaken for emphasis markers.
+const PROTECTED_SPAN = /(`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g;
+
+const emphasis = (text) => text
+  .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+  .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+  .replace(/_([^_]+)_/g, '<em>$1</em>');
+
+function link(label, url) {
+  if (!SAFE_URL.test(url)) return escapeHtml(`[${label}](${url})`);
+  return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${emphasis(escapeHtml(label))}</a>`;
+}
+
 function inline(text) {
-  return text.split(/(`[^`]+`)/g).map((seg) => {
-    if (seg.length >= 2 && seg.startsWith('`') && seg.endsWith('`')) {
-      return `<code>${escapeHtml(seg.slice(1, -1))}</code>`;
+  return text.split(PROTECTED_SPAN).map((segment) => {
+    if (segment.length >= 2 && segment.startsWith('`') && segment.endsWith('`')) {
+      return `<code>${escapeHtml(segment.slice(1, -1))}</code>`;
     }
-    let t = escapeHtml(seg)
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/_([^_]+)_/g, '<em>$1</em>');
-    return t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (whole, label, url) =>
-      SAFE_URL.test(url) ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>` : whole);
+    const parts = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(segment);
+    return parts ? link(parts[1], parts[2]) : emphasis(escapeHtml(segment));
   }).join('');
 }
 
@@ -84,21 +93,31 @@ function mdToHtml(src) {
 function markdownMount(body) {
   const input = h('textarea', { class: 'io-textarea', placeholder: '# Hello\n\nSome **bold** text with a [link](https://example.com) and `code`.', spellcheck: 'false' });
   const preview = h('div', { class: 'md-preview' });
-  const render = () => { preview.innerHTML = mdToHtml(input.value); };
+  let html = '';
+
+  const render = () => {
+    html = mdToHtml(input.value);
+    preview.innerHTML = html;
+  };
   input.addEventListener('input', render);
+
   body.append(
     h('div', { class: 'io-grid json-split' },
       h('div', { class: 'io-box' }, h('div', { class: 'io-label' }, 'Markdown'), input),
       h('div', { class: 'io-box' },
-        h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Preview'), copyBtn(() => input.value)),
+        h('div', { class: 'io-label-row' },
+          h('span', { class: 'io-label' }, 'Preview'),
+          copyBtn(() => html),
+        ),
         preview,
       ),
     ),
+    h('p', { class: 'tool-hint' }, 'Copy takes the generated HTML — your Markdown source stays in the left pane.'),
   );
   input.focus();
   render();
 }
 
 export default [
-  { id: 'md-preview', category: 'Text', name: 'Markdown', title: 'Markdown Preview', desc: 'Live preview of a common Markdown subset. Raw HTML is escaped and link URLs are sanitized.', mount: markdownMount },
+  { id: 'md-preview', category: 'Text', name: 'Markdown', title: 'Markdown Preview', desc: 'Live preview of a common Markdown subset, with the generated HTML one click away. Raw HTML is escaped and link URLs are sanitized.', mount: markdownMount },
 ];

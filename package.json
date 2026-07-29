@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prices": "node scripts/update-prices.mjs"
   },
   "devDependencies": {
     "vite": "^8.1.5"

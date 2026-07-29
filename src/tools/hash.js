@@ -9,13 +9,26 @@ function toHex(buf) {
 function hashMount(body) {
   const input = h('textarea', { class: 'io-textarea', placeholder: 'Text to hash…', spellcheck: 'false' });
   const output = h('textarea', { class: 'io-textarea', readonly: true, spellcheck: 'false' });
+  const error = h('div', { class: 'io-error' });
   const select = h('select', { class: 'select' }, ...ALGOS.map((a) => h('option', {}, a)));
 
+  // Digesting is async, so a fast typist can have several in flight at once and
+  // an earlier one may resolve last. Only the newest request may write output.
+  let latest = 0;
+
   const run = async () => {
+    error.textContent = '';
     if (!input.value) { output.value = ''; return; }
+    const request = ++latest;
     const data = new TextEncoder().encode(input.value);
-    const digest = await crypto.subtle.digest(select.value, data);
-    output.value = toHex(digest);
+    try {
+      const digest = await crypto.subtle.digest(select.value, data);
+      if (request === latest) output.value = toHex(digest);
+    } catch {
+      if (request !== latest) return;
+      output.value = '';
+      error.textContent = 'Web Crypto needs a secure context — open this page over https or on localhost.';
+    }
   };
   input.addEventListener('input', run);
   select.addEventListener('change', run);
@@ -26,6 +39,7 @@ function hashMount(body) {
     h('div', { class: 'io-box' },
       h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Digest (hex)'), copyBtn(() => output.value)),
       output,
+      error,
     ),
   );
   input.focus();
@@ -73,12 +87,12 @@ function passwordMount(body) {
   const strength = h('div', { class: 'rx-info' });
 
   const toggles = {};
-  const toggleRow = h('div', { class: 'pw-toggles' });
+  const poolRow = h('div', { class: 'toggle-row' });
   const defaults = { lower: true, upper: true, digits: true, symbols: false };
   for (const key of Object.keys(CHAR_SETS)) {
     const box = h('input', { type: 'checkbox', ...(defaults[key] ? { checked: true } : {}) });
     toggles[key] = box;
-    toggleRow.append(h('label', { class: 'pw-toggle' }, box, h('span', {}, `${key} (${CHAR_SETS[key].slice(0, 4)}…)`)));
+    poolRow.append(h('label', { class: 'toggle' }, box, h('span', {}, `${key} (${CHAR_SETS[key].slice(0, 4)}…)`)));
   }
 
   const gen = () => {
@@ -98,7 +112,7 @@ function passwordMount(body) {
   body.append(
     h('div', { class: 'tool-actions' },
       h('span', { class: 'io-label' }, 'Length'), length,
-      toggleRow,
+      poolRow,
       h('button', { class: 'btn btn-primary btn-sm', type: 'button', onClick: gen }, 'Generate'),
     ),
     h('div', { class: 'io-box' },

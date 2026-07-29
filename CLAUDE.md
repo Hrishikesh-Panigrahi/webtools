@@ -26,18 +26,25 @@ A tool is an object in a `src/tools/*` module:
 ```
 main.js        shell: sidebar, hash routing, theme toggle
 registry.js    the tool list
-dom.js         h() element builder, copyBtn, onRunKey
-panel.js       transformTool, ioBox
+dom.js         h() element builder, copyBtn, clearField, onRunKey
+panel.js       transformTool, ioBox, diffView, toggleRow, keyValueRow
+state.js       tool state encoding (persistence + share links)
+diff.js        line diff; tokens.js token estimation; cron.js cron schedules
+prices.json    generated model price table (npm run prices) — don't hand-edit
 styles/        base.css (tokens + shell), components.css (widgets)
 tools/         one module per category
 ```
+
+Pure logic lives in its own module at `src/` root, not inside a tool.
 
 ## Gotchas
 
 - Colors come from CSS vars in `styles/base.css` — don't hardcode, add/reuse a token.
 - Prefer web APIs over deps: `crypto.subtle` (hashing), `crypto.randomUUID`, `URL`, `BigInt`, `Intl`, `DOMParser`.
 - CSS is imported from JS (`import './styles/base.css'`) — that's a Vite thing, breaks without a bundler.
-- Client-side only: no network calls.
+- Client-side only: no network calls at runtime. The one exception is
+  `npm run prices`, a build-time script that regenerates `src/prices.json`; it is
+  not part of `npm run build`, and the committed JSON is what ships.
 - Before calling a change done: build passes *and* you opened the tool and used it.
 
 ## Conventions

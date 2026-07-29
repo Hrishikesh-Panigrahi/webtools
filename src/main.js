@@ -300,7 +300,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     palette.classList.contains('open') ? closePalette() : openPalette();
   } else if (e.key === 'Escape') {
-    closePalette(); closeHelp();
+    closePalette(); closeHelp(); closeSidebar();
   } else if (e.key === '/' && !typing) {
     e.preventDefault(); search.focus();
   } else if (e.key === '?' && !typing) {
