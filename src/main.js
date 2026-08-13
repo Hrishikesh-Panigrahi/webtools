@@ -1,6 +1,6 @@
 import './styles/base.css';
 import './styles/components.css';
-import { h, icons } from './dom.js';
+import { h, icons, categoryIcons } from './dom.js';
 import { encodeState, decodeState } from './state.js';
 import { tools, categories } from './registry.js';
 
@@ -19,11 +19,20 @@ const sunIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" str
 const moonIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>`;
 const menuIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`;
 const chevronIcon = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>`;
+const logoIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 8 9 12 5 16"/><line x1="12.5" y1="16" x2="19" y2="16"/></svg>`;
 
 // ---------- Shell ----------
-const search = h('input', { class: 'search', placeholder: 'Search tools…', spellcheck: 'false' });
+const search = h('input', { class: 'search-input', placeholder: 'Filter tools…', spellcheck: 'false', 'aria-label': 'Filter tools' });
+const searchBox = h('div', { class: 'search-box' },
+  h('span', { class: 'search-icon', html: icons.search }),
+  search,
+  h('kbd', { class: 'search-key' }, '/'),
+);
 const navList = h('div', { class: 'nav' });
-const sidebar = h('nav', { class: 'sidebar', id: 'sidebar' }, search, navList);
+const sidebar = h('nav', { class: 'sidebar', id: 'sidebar' },
+  h('div', { class: 'sidebar-head' }, searchBox),
+  navList,
+);
 const backdrop = h('div', { class: 'sidebar-backdrop' });
 const main = h('main', { class: 'main' });
 
@@ -34,11 +43,24 @@ const helpBtn = h('button', { class: 'btn-icon', 'aria-label': 'Keyboard shortcu
 const setThemeIcon = () => { themeBtn.innerHTML = document.documentElement.getAttribute('data-theme') === 'dark' ? sunIcon : moonIcon; };
 setThemeIcon();
 
+// The command palette was reachable only by knowing the shortcut; a visible
+// trigger advertises it, and doubles as the search affordance people look for.
+const isMacKeyboard = /Mac|iPhone|iPad/.test(navigator.userAgent);
+const paletteBtn = h('button', { class: 'palette-trigger', type: 'button', 'aria-label': 'Jump to a tool' },
+  h('span', { class: 'palette-trigger-icon', html: icons.search }),
+  h('span', { class: 'palette-trigger-label' }, 'Jump to a tool'),
+  h('kbd', { class: 'palette-trigger-key' }, isMacKeyboard ? '⌘K' : 'Ctrl K'),
+);
+
 const header = h('header', { class: 'header' },
   h('div', { class: 'header-left' },
     menuBtn,
-    h('a', { class: 'logo', href: '#' + tools[0].id }, 'webTools'),
+    h('a', { class: 'logo', href: '#' + tools[0].id },
+      h('span', { class: 'logo-mark', html: logoIcon }),
+      h('span', { class: 'logo-text' }, 'webTools'),
+    ),
   ),
+  paletteBtn,
   h('div', { class: 'header-right' }, linkBtn, helpBtn, themeBtn),
 );
 
@@ -58,18 +80,25 @@ function buildNav(filter = '') {
     const items = list.filter((t) => !q || t.name.toLowerCase().includes(q) || t.title.toLowerCase().includes(q) || cat.toLowerCase().includes(q));
     if (!items.length) continue;
 
-    const label = h('button', { class: 'nav-group-label', type: 'button' },
-      h('span', { class: 'chevron', html: chevronIcon }), cat);
+    // While searching, keep every matching group open.
+    const isCollapsed = !q && collapsed.has(cat);
+    const label = h('button', {
+      class: 'nav-group-label', type: 'button', 'aria-expanded': String(!isCollapsed),
+    },
+      h('span', { class: 'nav-group-icon', html: categoryIcons[cat] ?? '' }),
+      h('span', { class: 'nav-group-name' }, cat),
+      h('span', { class: 'nav-group-count' }, String(items.length)),
+      h('span', { class: 'chevron', html: chevronIcon }),
+    );
     const itemsWrap = h('div', { class: 'nav-items' });
     for (const t of items) {
       itemsWrap.append(h('a', { class: 'nav-item', href: '#' + t.id, 'data-id': t.id }, t.name));
       shown++;
     }
-    // While searching, keep every matching group open.
-    const isCollapsed = !q && collapsed.has(cat);
     const group = h('div', { class: 'nav-group' + (isCollapsed ? ' collapsed' : '') }, label, itemsWrap);
     label.addEventListener('click', () => {
       const nowCollapsed = group.classList.toggle('collapsed');
+      label.setAttribute('aria-expanded', String(!nowCollapsed));
       if (nowCollapsed) collapsed.add(cat); else collapsed.delete(cat);
       saveCollapsed();
     });
@@ -313,6 +342,7 @@ themeBtn.addEventListener('click', () => {
   setThemeIcon();
 });
 helpBtn.addEventListener('click', openHelp);
+paletteBtn.addEventListener('click', openPalette);
 linkBtn.addEventListener('click', async () => {
   if (!currentBody) return;
   const values = serialize(currentBody);

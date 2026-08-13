@@ -21,13 +21,15 @@ A tool is an object in a `src/tools/*` module:
 - `mount(body)` builds the UI into `body`. For input→output tools use `transformTool({ transform })` from `panel.js`; for tools that read a binary file use `filePicker({ accept, onFile })`.
 - Import the module's array in `src/registry.js`. Sidebar, routing, search and theme follow automatically.
 - `id` is the URL hash (`#json-compare`) — keep it unique.
+- A *new* `category` also needs an entry in `categoryIcons` (`dom.js`), or its sidebar
+  group shows a blank space where the glyph goes.
 
 ## Where things live
 
 ```
 main.js        shell: sidebar, hash routing, theme toggle
 registry.js    the tool list
-dom.js         h() element builder, copyBtn, clearField, onRunKey
+dom.js         h() element builder, copyBtn, clearField, onRunKey, icons, categoryIcons
 panel.js       transformTool, ioBox, diffView, toggleRow, keyValueRow, filePicker
 state.js       tool state encoding (persistence + share links)
 diff.js        line diff; tokens.js token estimation; cron.js cron schedules
