@@ -50,7 +50,10 @@ function counterMount(body) {
     sChars.textContent = t.length.toLocaleString();
     sWords.textContent = (t.trim() ? t.trim().split(/\s+/).length : 0).toLocaleString();
     sLines.textContent = (t ? t.split(/\n/).length : 0).toLocaleString();
-    sSent.textContent = (t.match(/[^.!?]+[.!?]+/g) || []).length.toLocaleString();
+    // One non-terminator then terminators, rather than a greedy `[^.!?]+` run:
+    // the greedy form backtracks over the whole string at every start position,
+    // which turns a 50k paste into seconds of work for the same count.
+    sSent.textContent = (t.match(/[^.!?][.!?]+/g) || []).length.toLocaleString();
     sBytes.textContent = new TextEncoder().encode(t).length.toLocaleString();
   };
   input.addEventListener('input', run);
@@ -103,28 +106,30 @@ function regexMount(body) {
     error.textContent = '';
     info.textContent = '';
     if (!pattern.value) { highlight.textContent = test.value; return; }
-    let re;
+
+    const text = test.value;
+    let out = '', last = 0, count = 0, firstGroups = null, match;
+    // The scan sits inside the try as well as the construction: V8 compiles a
+    // pattern lazily, so an over-large one throws on the first exec, not on new.
     try {
       const flagStr = flags.value.includes('g') ? flags.value : flags.value + 'g';
-      re = new RegExp(pattern.value, flagStr);
+      const re = new RegExp(pattern.value, flagStr);
+      re.lastIndex = 0;
+      while ((match = re.exec(text)) !== null) {
+        out += escapeHtml(text.slice(last, match.index));
+        // A zero-length match (e.g. `a*`) has nothing to highlight — counting it is
+        // enough; an empty <mark> would just render as a stray sliver.
+        if (match[0]) out += '<mark class="rx-hit">' + escapeHtml(match[0]) + '</mark>';
+        last = match.index + match[0].length;
+        count++;
+        if (match.length > 1 && !firstGroups) firstGroups = match.slice(1);
+        if (match.index === re.lastIndex) re.lastIndex++; // guard against zero-length matches
+        if (count > 50000) break; // safety valve
+      }
     } catch (e) {
       error.textContent = e.message;
       highlight.textContent = test.value;
       return;
-    }
-    const text = test.value;
-    let out = '', last = 0, count = 0, firstGroups = null, match;
-    re.lastIndex = 0;
-    while ((match = re.exec(text)) !== null) {
-      out += escapeHtml(text.slice(last, match.index));
-      // A zero-length match (e.g. `a*`) has nothing to highlight — counting it is
-      // enough; an empty <mark> would just render as a stray sliver.
-      if (match[0]) out += '<mark class="rx-hit">' + escapeHtml(match[0]) + '</mark>';
-      last = match.index + match[0].length;
-      count++;
-      if (match.length > 1 && !firstGroups) firstGroups = match.slice(1);
-      if (match.index === re.lastIndex) re.lastIndex++; // guard against zero-length matches
-      if (count > 50000) break; // safety valve
     }
     out += escapeHtml(text.slice(last));
     highlight.innerHTML = out;

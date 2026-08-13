@@ -106,6 +106,16 @@ test('IPv6 scopes are classified', () => {
   for (const [address, scope] of cases) assert.equal(field(address, 'Scope'), scope, address);
 });
 
+test('a zone id is accepted and reported, not rejected', () => {
+  // `ip addr` and `ifconfig` print link-local addresses with a scope suffix.
+  assert.equal(formatIpv6(parseIpv6('fe80::1%eth0')), 'fe80::1');
+  assert.equal(field('fe80::1%eth0', 'Zone'), 'eth0');
+  assert.equal(field('fe80::1%eth0', 'Scope'), 'Link-local');
+  assert.equal(field('fe80::1%25', 'Zone'), '25', 'a numeric scope id works too');
+  assert.throws(() => describeAddress('1.2.3.4').rows.find(([name]) => name === 'Zone').at(1), TypeError,
+    'IPv4 gets no zone row');
+});
+
 test('IPv6 reverse DNS is nibble-reversed', () => {
   assert.equal(
     field('::1', 'Reverse DNS'),

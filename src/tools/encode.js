@@ -19,6 +19,25 @@ function b64urlToUtf8(part) {
   return b64ToUtf8(s);
 }
 
+/**
+ * Decode one JWT segment, naming the part that failed. Segment count alone does
+ * not tell you much — "not.a.jwt" has three of them — so a bad segment has to
+ * report itself rather than surface a raw JSON.parse message.
+ */
+function decodeJwtSegment(segment, label) {
+  let json;
+  try {
+    json = b64urlToUtf8(segment);
+  } catch {
+    throw new Error(`The ${label} segment is not valid base64url.`);
+  }
+  try {
+    return JSON.parse(json);
+  } catch {
+    throw new Error(`The ${label} segment did not decode to JSON — this does not look like a JWT.`);
+  }
+}
+
 const htmlEscapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
 export default [
@@ -71,8 +90,8 @@ export default [
       transform: (s) => {
         const parts = s.trim().split('.');
         if (parts.length < 2) throw new Error('Not a JWT — expected at least two dot-separated segments.');
-        const header = JSON.parse(b64urlToUtf8(parts[0]));
-        const payload = JSON.parse(b64urlToUtf8(parts[1]));
+        const header = decodeJwtSegment(parts[0], 'header');
+        const payload = decodeJwtSegment(parts[1], 'payload');
         let out = 'HEADER\n' + JSON.stringify(header, null, 2) + '\n\nPAYLOAD\n' + JSON.stringify(payload, null, 2);
         if (payload.exp) {
           const d = new Date(payload.exp * 1000);

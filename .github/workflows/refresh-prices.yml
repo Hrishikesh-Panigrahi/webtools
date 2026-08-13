@@ -16,9 +16,9 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -36,6 +36,13 @@ jobs:
           branch=chore/refresh-model-prices
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          # checkout only fetches the default branch, so git has no remote-tracking
+          # ref for the rolling price branch. --force-with-lease then refuses the
+          # push with "stale info" rather than comparing against anything. Fetch the
+          # branch explicitly so the lease has something real to check.
+          git fetch origin "+refs/heads/$branch:refs/remotes/origin/$branch" || true
+
           git checkout -B "$branch"
           git add src/prices.json
           git commit -m 'Refresh model price table'

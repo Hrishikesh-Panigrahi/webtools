@@ -38,6 +38,11 @@
 
 * { box-sizing: border-box; }
 
+/* The `hidden` attribute must win over any layout rule. Components that set
+   `display` on a class (`.io-box { display: flex }`) otherwise beat the user
+   agent's `[hidden] { display: none }`, leaving "hidden" panels on screen. */
+[hidden] { display: none !important; }
+
 /* Modern, theme-aware scrollbars (sidebar, main, JSON tree, textareas). */
 * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-dim) 40%, transparent) transparent; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }

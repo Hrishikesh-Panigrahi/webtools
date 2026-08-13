@@ -7,6 +7,11 @@
 .tool-hint { color: var(--text-dim); font-size: .85rem; margin: 0 0 .8rem; }
 
 .io-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+/* Grid items default to min-width:auto, so one unbreakable line — a minified
+   JSON string, a long token — grows its column past 1fr and squeezes the other
+   one to nothing. Pinning min-width:0 keeps the split even and lets the child's
+   own `overflow: auto` do the scrolling. */
+.io-grid > * { min-width: 0; }
 .io-box { display: flex; flex-direction: column; gap: .35rem; }
 .io-label, .io-label-row { font-size: .75rem; font-weight: 600; color: var(--text-dim); }
 .io-label-row { display: flex; align-items: center; justify-content: space-between; }
@@ -292,7 +297,6 @@
 .qr-control > .kv-value { min-width: 44px; }
 /* Selects size to their longest option (voice names run long) — let them shrink. */
 .qr-control > .select { min-width: 0; }
-.qr-control[hidden] { display: none; }
 
 /* ===================== QR code ===================== */
 .qr-preview {

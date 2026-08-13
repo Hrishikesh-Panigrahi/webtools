@@ -114,7 +114,12 @@ function primitiveSpan(value) {
 // Recursively render `value` into `container`. Objects and arrays become
 // collapsible groups; primitives become a single line. `key` is null for array
 // items and top-level values.
-function renderValue(container, key, value, isLast) {
+//
+// `lazy` defers a branch's children until it is first opened and starts it
+// folded. Building every row up front costs seconds on a large document — a
+// half-megabyte export is tens of thousands of elements — so past a size
+// threshold the tree materialises only what the reader actually opens.
+function renderValue(container, key, value, isLast, lazy = false) {
   const keyNode = key == null ? null : h('span', { class: 'json-key' }, `${JSON.stringify(key)}: `);
   const trailing = isLast ? null : h('span', { class: 'json-punct' }, ',');
   const isBranch = value !== null && typeof value === 'object';
@@ -154,11 +159,24 @@ function renderValue(container, key, value, isLast) {
   const group = h('div', { class: 'json-group' });
   const branch = treeLine(chevron, keyNode, h('span', { class: 'json-punct' }, open), summary);
   branch.classList.add('json-branch');
-  branch.addEventListener('click', () => group.classList.toggle('collapsed'));
 
   const children = h('div', { class: 'json-children' });
-  entries.forEach(([childKey, childValue], i) => {
-    renderValue(children, isArray ? null : childKey, childValue, i === entries.length - 1);
+  let built = false;
+  const buildChildren = () => {
+    if (built) return;
+    built = true;
+    entries.forEach(([childKey, childValue], i) => {
+      renderValue(children, isArray ? null : childKey, childValue, i === entries.length - 1, lazy);
+    });
+  };
+
+  // Expand-all reaches for this to materialise folded branches it has not opened.
+  group.buildChildren = buildChildren;
+  if (lazy) group.classList.add('collapsed'); else buildChildren();
+
+  branch.addEventListener('click', () => {
+    buildChildren();
+    group.classList.toggle('collapsed');
   });
 
   const closeLine = treeLine(null, h('span', { class: 'json-punct' }, close), trailing);
@@ -172,9 +190,13 @@ function renderValue(container, key, value, isLast) {
 // the panel to full width when the document is large.
 function prettifyMount(body) {
   const WIDE_LINE_THRESHOLD = 40;
+  // Past this much formatted JSON, branches fold instead of rendering up front.
+  const LAZY_CHAR_THRESHOLD = 200_000;
   const input = h('textarea', { class: 'io-textarea', placeholder: '{"name":"Alice","age":30}', spellcheck: 'false' });
   const error = h('div', { class: 'io-error' });
   const tree = h('div', { class: 'json-tree' });
+  const foldNote = h('p', { class: 'tool-hint', hidden: true },
+    'Large document — branches start folded and build as you open them. "Expand all" will still render everything.');
   let pretty = '';
 
   const panel = () => body.closest('.tool-panel');
@@ -184,8 +206,22 @@ function prettifyMount(body) {
     widthBtn.textContent = wide ? 'Collapse width' : 'Expand width';
     widthBtn.setAttribute('aria-pressed', String(wide));
   };
+  // Expanding a lazily-built tree reveals branches that do not exist yet, so
+  // keep going until a pass stops turning up new ones.
   const setAllCollapsed = (collapsed) => {
-    tree.querySelectorAll('.json-group').forEach((group) => group.classList.toggle('collapsed', collapsed));
+    if (collapsed) {
+      tree.querySelectorAll('.json-group').forEach((group) => group.classList.add('collapsed'));
+      return;
+    }
+    let previousCount = -1;
+    while (previousCount !== tree.querySelectorAll('.json-group').length) {
+      const groups = [...tree.querySelectorAll('.json-group')];
+      previousCount = groups.length;
+      groups.forEach((group) => {
+        group.buildChildren?.();
+        group.classList.remove('collapsed');
+      });
+    }
   };
 
   const widthBtn = h('button', { class: 'btn btn-sm', type: 'button', onClick: () => setWide(!isWide()) }, 'Expand width');
@@ -210,7 +246,9 @@ function prettifyMount(body) {
       return;
     }
     pretty = JSON.stringify(parsed, null, 2);
-    renderValue(tree, null, parsed, true);
+    const lazy = pretty.length > LAZY_CHAR_THRESHOLD;
+    renderValue(tree, null, parsed, true, lazy);
+    foldNote.hidden = !lazy;
     setWide(pretty.split('\n').length > WIDE_LINE_THRESHOLD);
   };
 
@@ -223,6 +261,7 @@ function prettifyMount(body) {
       h('div', { class: 'io-box' },
         h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Output'), controls),
         tree,
+        foldNote,
       ),
     ),
     h('div', { class: 'tool-actions' },

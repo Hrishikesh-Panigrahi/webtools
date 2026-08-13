@@ -93,8 +93,14 @@ function describeIpv4(address, prefix) {
 
 // ---------- IPv6 ----------
 
+/** Split a scope/zone id (`fe80::1%eth0`) off an address, as `ip addr` prints it. */
+export function splitZone(text) {
+  const [address, ...zone] = text.trim().replace(/^\[|\]$/g, '').split('%');
+  return { address, zone: zone.join('%') || null };
+}
+
 export function parseIpv6(text) {
-  const trimmed = text.trim().replace(/^\[|\]$/g, '');
+  const { address: trimmed } = splitZone(text);
   if (!/^[0-9a-f:.]+$/i.test(trimmed)) throw new Error(`"${text}" is not an IPv6 address.`);
 
   const halves = trimmed.split('::');
@@ -173,7 +179,7 @@ function ipv6Scope(address) {
 
 const reverseIpv6 = (address) => formatIpv6Full(address).replace(/:/g, '').split('').reverse().join('.') + '.ip6.arpa';
 
-function describeIpv6(address, prefix) {
+function describeIpv6(address, prefix, zone) {
   const mask = ipv6Mask(prefix);
   const network = address & mask;
   const last = network | (~mask & ((1n << 128n) - 1n));
@@ -184,6 +190,7 @@ function describeIpv6(address, prefix) {
     prefix,
     rows: [
       ['Address', formatIpv6(address)],
+      ...(zone ? [['Zone', zone]] : []),
       ['Expanded', formatIpv6Full(address)],
       ['Network', `${formatIpv6(network)}/${prefix}`],
       ['First address', formatIpv6(network)],
@@ -221,7 +228,7 @@ export function describeAddress(input) {
   if (prefix > maxPrefix) throw new Error(`A prefix cannot exceed /${maxPrefix}.`);
 
   return isIpv6
-    ? describeIpv6(parseIpv6(addressPart), prefix)
+    ? describeIpv6(parseIpv6(addressPart), prefix, splitZone(addressPart).zone)
     : describeIpv4(parseIpv4(addressPart), prefix);
 }
 
