@@ -72,6 +72,8 @@ function exifMount(body) {
   preview.setLabel('Image');
 
   let report = null;
+  // Reading a file is async, so a slower earlier drop must not overwrite a newer one.
+  let latestLoad = 0;
 
   const asJson = () => (report
     ? JSON.stringify(Object.fromEntries(report.groups.map((group) => [
@@ -114,12 +116,23 @@ function exifMount(body) {
     accept: 'image/*',
     hint: 'Drop a photo here, or click to choose — JPEG, PNG or WebP',
     onFile: async (file) => {
+      const request = ++latestLoad;
       error.textContent = '';
       results.innerHTML = '';
       report = null;
       preview.show(file);
+
+      let bytes;
       try {
-        report = inspectImage(await readArrayBuffer(file));
+        bytes = await readArrayBuffer(file);
+      } catch {
+        if (request === latestLoad) error.textContent = 'That file could not be read.';
+        return;
+      }
+      if (request !== latestLoad) return; // superseded by a newer file
+
+      try {
+        report = inspectImage(bytes);
       } catch (failure) {
         error.textContent = failure.message;
         return;
@@ -138,20 +151,25 @@ function cleanerMount(body) {
   const summary = h('div', { class: 'meta-results' });
   const preview = previewImage();
   preview.setLabel('Cleaned image');
+  // Reading a file is async, so a slower earlier drop must not overwrite a newer one.
+  let latestLoad = 0;
 
   const picker = filePicker({
     accept: 'image/jpeg,image/png,image/webp',
     hint: 'Drop a photo here to strip its metadata — JPEG, PNG or WebP',
     onFile: async (file) => {
+      const request = ++latestLoad;
       error.textContent = '';
       summary.innerHTML = '';
       preview.hide();
 
       let result;
       try {
-        result = stripImageMetadata(await readArrayBuffer(file));
+        const bytes = await readArrayBuffer(file);
+        if (request !== latestLoad) return; // superseded by a newer file
+        result = stripImageMetadata(bytes);
       } catch (failure) {
-        error.textContent = failure.message;
+        if (request === latestLoad) error.textContent = failure.message;
         return;
       }
 
@@ -214,15 +232,22 @@ function converterMount(body) {
 
   let source = null;
   let sourceFile = null;
+  // Both loading a file and encoding one are async, so a slow earlier request
+  // can finish after a newer one. Each takes a ticket and drops out if beaten.
+  let latestLoad = 0;
+  let latestRender = 0;
 
   const qualityRow = h('label', { class: 'qr-control' },
     h('span', { class: 'part-label' }, 'Quality'), quality, qualityValue);
 
   const convert = async () => {
     if (!source) return;
+    const request = ++latestRender;
     error.textContent = '';
     const type = OUTPUT_TYPES[target.value];
     qualityRow.hidden = type === 'image/png';
+    // Capture the file this run describes; a newer drop must not relabel it.
+    const file = sourceFile;
 
     const limit = Number(maxSide.value) || 0;
     const { width, height } = fitWithin(source.width, source.height, limit);
@@ -237,19 +262,22 @@ function converterMount(body) {
     }
     context.drawImage(source, 0, 0, width, height);
 
+    const sourceWidth = source.width;
+    const sourceHeight = source.height;
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, Number(quality.value) / 100));
+    if (request !== latestRender) return; // a newer setting or file already won
     if (!blob) { error.textContent = `This browser cannot write ${target.value}.`; return; }
 
     preview.show(blob);
     summary.innerHTML = '';
     summary.append(h('div', { class: 'stat-grid' },
-      statTile('Source (upright)', `${source.width} × ${source.height}`),
+      statTile('Source (upright)', `${sourceWidth} × ${sourceHeight}`),
       statTile('Output', `${width} × ${height}`),
-      statTile('Size', `${formatBytes(sourceFile.size)} → ${formatBytes(blob.size)}`),
-      statTile('Change', formatDelta(sourceFile.size, blob.size)),
+      statTile('Size', `${formatBytes(file.size)} → ${formatBytes(blob.size)}`),
+      statTile('Change', formatDelta(file.size, blob.size)),
     ));
 
-    const stem = sourceFile.name.replace(/\.[^.]+$/, '');
+    const stem = file.name.replace(/\.[^.]+$/, '');
     const extension = target.value === 'JPEG' ? 'jpg' : target.value.toLowerCase();
     summary.append(h('div', { class: 'tool-actions' },
       h('button', {
@@ -263,21 +291,31 @@ function converterMount(body) {
     accept: 'image/*',
     hint: 'Drop an image here, or click to choose',
     onFile: async (file) => {
+      const request = ++latestLoad;
       error.textContent = '';
-      sourceFile = file;
+
+      let bitmap;
+      let bytes;
       try {
         // Bake in the EXIF rotation rather than relying on a tag the output may not carry.
-        source = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        [bitmap, bytes] = await Promise.all([
+          createImageBitmap(file, { imageOrientation: 'from-image' }),
+          readArrayBuffer(file),
+        ]);
       } catch {
+        if (request !== latestLoad) return;
         error.textContent = 'This browser could not decode that image.';
         source = null;
         return;
       }
-      const detected = detectFormat(new Uint8Array(await readArrayBuffer(file)));
-      // Default to a different format than the input, since converting to itself is rarely the point.
-      if (detected === 'png') target.value = 'WebP';
-      else if (detected === 'jpeg') target.value = 'WebP';
-      else target.value = 'PNG';
+      // Drop a slower load that a newer file has already superseded, or the
+      // stats would describe one image and the bitmap would be another.
+      if (request !== latestLoad) { bitmap.close?.(); return; }
+
+      source = bitmap;
+      sourceFile = file;
+      // Default to a format other than the input's, since converting to itself is rarely the point.
+      target.value = detectFormat(new Uint8Array(bytes)) === 'webp' ? 'PNG' : 'WebP';
       convert();
     },
   });

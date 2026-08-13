@@ -205,7 +205,8 @@ const CSV_TO_JSON = 'CSV → JSON';
 const TYPED = 'Parse numbers & booleans';
 
 function csvMount(body) {
-  const direction = h('select', { class: 'select' }, ...[CSV_TO_JSON, 'JSON → CSV'].map((label) => h('option', {}, label)));
+  const direction = h('select', { class: 'select', 'aria-label': 'Conversion direction' },
+    ...[CSV_TO_JSON, 'JSON → CSV'].map((label) => h('option', {}, label)));
   const delimiter = h('select', { class: 'select' }, ...Object.keys(DELIMITERS).map((label) => h('option', {}, label)));
   const { row: options, boxes } = toggleRow([TYPED]);
   const input = h('textarea', { class: 'io-textarea tall', spellcheck: 'false' });

@@ -123,6 +123,17 @@ test('IPv6 reverse DNS is nibble-reversed', () => {
   );
 });
 
+test('an error quotes the input but never echoes a whole paste', () => {
+  const blob = 'A'.repeat(4000);
+  let message = '';
+  try { describeAddress(blob); } catch (error) { message = error.message; }
+  assert.match(message, /is not an IPv4 address/);
+  assert.ok(message.length < 80, `message was ${message.length} chars: it must stay readable`);
+  assert.ok(message.includes('…'), 'the quoted input is elided');
+  // A short address is still quoted in full.
+  try { describeAddress('1.2.3'); } catch (error) { assert.ok(error.message.includes('"1.2.3"')); }
+});
+
 test('malformed input is rejected', () => {
   const bad = [
     '', '999.1.1.1', '1.2.3', '1.2.3.4.5', 'hello', '10.0.0.1/33',

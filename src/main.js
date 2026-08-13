@@ -142,6 +142,36 @@ function bindStateSaving(body, id) {
   body.addEventListener('change', save);
 }
 
+/**
+ * Give every control an accessible name.
+ *
+ * Tools label their fields visually — an `.io-label` above a textarea, a
+ * `.part-label` beside a row — which reads correctly on screen but leaves a
+ * screen reader announcing a bare "edit text". Rather than making every tool
+ * mint ids and `<label for>` pairs, the shell borrows the nearest visible label
+ * once the tool has mounted.
+ */
+function nameControls(body) {
+  const LABEL_SELECTOR = '.part-label, .kv-label, .io-label';
+  const labelFor = (el) => {
+    const row = el.closest('.color-out-row, .part-row, .param-row, .qr-control, .gradient-stop, .kv-row');
+    const rowLabel = row?.querySelector(LABEL_SELECTOR)?.textContent.trim();
+    if (rowLabel) return rowLabel;
+    // Control rows put the caption immediately before the control it describes.
+    const previous = el.previousElementSibling;
+    if (previous?.matches(LABEL_SELECTOR)) return previous.textContent.trim();
+    return el.closest('.io-box')?.querySelector('.io-label')?.textContent.trim() || null;
+  };
+
+  for (const el of body.querySelectorAll('input:not([type=hidden]), select, textarea')) {
+    const named = el.getAttribute('aria-label') || el.getAttribute('title')
+      || el.getAttribute('placeholder') || el.closest('label');
+    if (named) continue;
+    const name = labelFor(el);
+    if (name) el.setAttribute('aria-label', name);
+  }
+}
+
 // Drop a text file onto any editable textarea to load its contents.
 function wireFileDrop(body) {
   body.querySelectorAll('textarea:not([readonly])').forEach((ta) => {
@@ -186,6 +216,7 @@ function render() {
   restoreState(body, id, query);
   bindStateSaving(body, id);
   wireFileDrop(body);
+  nameControls(body);
   main.scrollTop = 0;
   highlightActive();
   closeSidebar();

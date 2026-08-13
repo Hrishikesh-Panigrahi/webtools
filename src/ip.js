@@ -2,15 +2,23 @@
 // IPv4 works in unsigned 32-bit integers, IPv6 in BigInt, so a /8 and a /12
 // answer with the same code path.
 
+// A message quotes what the reader typed, but a pasted blob would otherwise be
+// echoed back in full — unreadable, and long enough to distort the layout.
+const MAX_QUOTED = 32;
+const quote = (text) => {
+  const trimmed = String(text).trim();
+  return `"${trimmed.length > MAX_QUOTED ? `${trimmed.slice(0, MAX_QUOTED)}…` : trimmed}"`;
+};
+
 // ---------- IPv4 ----------
 
 export function parseIpv4(text) {
   const parts = text.trim().split('.');
-  if (parts.length !== 4) throw new Error(`"${text}" is not an IPv4 address.`);
+  if (parts.length !== 4) throw new Error(`${quote(text)} is not an IPv4 address.`);
   return parts.reduce((accumulator, part) => {
-    if (!/^\d{1,3}$/.test(part)) throw new Error(`"${text}" has a non-numeric octet.`);
+    if (!/^\d{1,3}$/.test(part)) throw new Error(`${quote(text)} has a non-numeric octet.`);
     const octet = Number(part);
-    if (octet > 255) throw new Error(`"${text}" has an octet above 255.`);
+    if (octet > 255) throw new Error(`${quote(text)} has an octet above 255.`);
     return accumulator * 256 + octet;
   }, 0);
 }
@@ -101,7 +109,7 @@ export function splitZone(text) {
 
 export function parseIpv6(text) {
   const { address: trimmed } = splitZone(text);
-  if (!/^[0-9a-f:.]+$/i.test(trimmed)) throw new Error(`"${text}" is not an IPv6 address.`);
+  if (!/^[0-9a-f:.]+$/i.test(trimmed)) throw new Error(`${quote(text)} is not an IPv6 address.`);
 
   const halves = trimmed.split('::');
   if (halves.length > 2) throw new Error('An IPv6 address may contain "::" only once.');
@@ -125,7 +133,7 @@ export function parseIpv6(text) {
   const all = hasGap ? [...head, ...new Array(8 - supplied).fill('0'), ...tail] : head;
 
   return all.reduce((accumulator, group) => {
-    if (!/^[0-9a-f]{1,4}$/i.test(group)) throw new Error(`"${group}" is not a valid IPv6 group.`);
+    if (!/^[0-9a-f]{1,4}$/i.test(group)) throw new Error(`${quote(group)} is not a valid IPv6 group.`);
     return (accumulator << 16n) | BigInt(parseInt(group, 16));
   }, 0n);
 }
@@ -220,7 +228,7 @@ export function describeAddress(input) {
   if (maskPart === undefined) prefix = isIpv6 ? 128 : 32;
   else if (!isIpv6 && maskPart.includes('.')) prefix = maskToPrefix(parseIpv4(maskPart));
   else {
-    if (!/^\d{1,3}$/.test(maskPart)) throw new Error(`"${maskPart}" is not a prefix length.`);
+    if (!/^\d{1,3}$/.test(maskPart)) throw new Error(`${quote(maskPart)} is not a prefix length.`);
     prefix = Number(maskPart);
   }
 

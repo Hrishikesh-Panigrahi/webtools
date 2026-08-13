@@ -29,7 +29,9 @@
 .io-textarea.tall { min-height: 260px; }
 .io-textarea:focus { outline: none; border-color: var(--accent); }
 .io-textarea[readonly] { background: var(--surface-2); }
-.io-error { color: var(--bad); font-size: .8rem; font-family: var(--mono); min-height: .9rem; }
+/* Messages quote the offending input, which may be one long unbreakable run —
+   wrap anywhere so a bad paste can never push the layout sideways. */
+.io-error { color: var(--bad); font-size: .8rem; font-family: var(--mono); min-height: .9rem; overflow-wrap: anywhere; }
 
 /* ===================== Buttons & controls ===================== */
 .tool-actions { display: flex; align-items: center; gap: .55rem; margin-top: .8rem; flex-wrap: wrap; }
@@ -275,6 +277,9 @@
   padding: .2rem 1rem; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--surface); color: var(--text); font-size: .9rem; line-height: 1.6;
 }
+/* Prose should reflow, so a bare long URL wraps rather than making the whole
+   rendered document scroll sideways. Code blocks keep their own scrolling. */
+.md-preview :not(.md-pre):not(.md-pre *) { overflow-wrap: anywhere; }
 .md-preview .md-h { line-height: 1.3; margin: .8em 0 .4em; font-weight: 700; }
 .md-preview h1 { font-size: 1.5rem; }
 .md-preview h2 { font-size: 1.3rem; }
@@ -359,5 +364,8 @@
 @media (max-width: 720px) {
   .color-preview { flex-direction: column; }
   .color-swatch { width: 100%; min-height: 60px; }
-  .color-out-row { grid-template-columns: 64px 1fr auto; }
+  /* A fixed label column truncates the longer names ("Hexadecimal",
+     "Kilocalorie (kcal)"), so give the label its own full-width row. */
+  .color-out-row { grid-template-columns: 1fr auto; }
+  .color-out-row > .part-label { grid-column: 1 / -1; }
 }

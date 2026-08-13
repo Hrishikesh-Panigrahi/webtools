@@ -12,7 +12,7 @@ function caesarMount(body) {
   const input = h('textarea', { class: 'io-textarea', placeholder: 'Attack at dawn', spellcheck: 'false' });
   const output = h('textarea', { class: 'io-textarea', readonly: true, spellcheck: 'false' });
   const range = h('input', { type: 'range', min: '0', max: '25', value: '3', class: 'slider' });
-  const num = h('input', { type: 'number', min: '-25', max: '25', value: '3', class: 'part-input', style: 'max-width:5rem' });
+  const num = h('input', { type: 'number', min: '-25', max: '25', value: '3', class: 'part-input', style: 'max-width:5rem', 'aria-label': 'Shift amount' });
 
   const run = () => { output.value = shift(input.value, +num.value || 0); };
   const sync = (v) => { range.value = ((+v % 26) + 26) % 26; num.value = v; run(); };

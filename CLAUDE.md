@@ -66,6 +66,14 @@ tests there for new logic; tool `mount` functions are checked by hand in the bro
   whole string from every start position, which cost seconds on a 50k paste. And a
   pattern the *user* supplies can throw at `.exec()`, not just at `new RegExp` —
   V8 compiles lazily, so keep the scan inside the try too.
+- The shell gives every control an accessible name after mount, borrowing the nearest
+  visible `.io-label` / `.part-label`. So a field inside an `.io-box` or a labelled row
+  needs nothing. A control in a bare `.tool-actions` row has no label to borrow — give
+  that one an explicit `aria-label`.
+- Anything `await`ed between a user action and a render needs a guard: take a ticket
+  (`const request = ++latest`) and bail on resume if `request !== latest`. Dropping two
+  files quickly into the image converter otherwise showed the first image's dimensions
+  next to the second file's name and size.
 - Before calling a change done: build passes *and* you opened the tool and used it.
 
 ## Conventions
