@@ -242,6 +242,95 @@ function linesMount(body) {
   input.focus();
 }
 
+// --- Text to speech ---
+
+// The voice list arrives asynchronously in most browsers, and a long utterance
+// is silently cut off in some, so the text is spoken one sentence at a time.
+function speechMount(body) {
+  const synth = window.speechSynthesis;
+  const input = h('textarea', { class: 'io-textarea tall', spellcheck: 'false', placeholder: 'Type or paste something to read aloud…' });
+  const voiceSelect = h('select', { class: 'select' });
+  const status = h('span', { class: 'kv-value' }, 'Idle');
+
+  if (!synth) {
+    body.append(h('p', { class: 'tool-hint' }, 'This browser has no speech synthesis support.'));
+    return;
+  }
+
+  const sliders = {};
+  const sliderRow = (label, min, max, step, initial, format) => {
+    const slider = h('input', { class: 'slider', type: 'range', min, max, step, value: String(initial) });
+    const readout = h('span', { class: 'kv-value' }, format(initial));
+    slider.addEventListener('input', () => { readout.textContent = format(Number(slider.value)); });
+    sliders[label] = slider;
+    return h('label', { class: 'qr-control' }, h('span', { class: 'part-label' }, label), slider, readout);
+  };
+
+  const rateRow = sliderRow('Rate', '0.5', '2', '0.1', 1, (v) => `${v.toFixed(1)}×`);
+  const pitchRow = sliderRow('Pitch', '0', '2', '0.1', 1, (v) => v.toFixed(1));
+  const volumeRow = sliderRow('Volume', '0', '1', '0.05', 1, (v) => `${Math.round(v * 100)}%`);
+
+  let voices = [];
+  const loadVoices = () => {
+    voices = synth.getVoices();
+    if (!voices.length) return;
+    const previous = voiceSelect.value;
+    voiceSelect.innerHTML = '';
+    voices.forEach((voice, index) => {
+      voiceSelect.append(h('option', { value: String(index) }, `${voice.name} — ${voice.lang}${voice.default ? ' (default)' : ''}`));
+    });
+    if (previous && voices[Number(previous)]) voiceSelect.value = previous;
+  };
+  loadVoices();
+  synth.addEventListener('voiceschanged', loadVoices);
+
+  const speak = () => {
+    const text = input.value.trim();
+    if (!text) return;
+    synth.cancel();
+    // Chunking keeps long text from hitting the per-utterance limits browsers impose.
+    const chunks = text.match(/[^.!?\n]+[.!?]*\s*/g) ?? [text];
+    chunks.forEach((chunk, index) => {
+      const utterance = new SpeechSynthesisUtterance(chunk);
+      const voice = voices[Number(voiceSelect.value)];
+      if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
+      utterance.rate = Number(sliders.Rate.value);
+      utterance.pitch = Number(sliders.Pitch.value);
+      utterance.volume = Number(sliders.Volume.value);
+      if (index === chunks.length - 1) utterance.addEventListener('end', () => { status.textContent = 'Finished'; });
+      synth.speak(utterance);
+    });
+    status.textContent = `Speaking ${chunks.length} chunk${chunks.length === 1 ? '' : 's'}`;
+  };
+
+  const pause = h('button', { class: 'btn', type: 'button' }, 'Pause');
+  pause.addEventListener('click', () => {
+    if (synth.paused) { synth.resume(); pause.textContent = 'Pause'; status.textContent = 'Speaking'; }
+    else { synth.pause(); pause.textContent = 'Resume'; status.textContent = 'Paused'; }
+  });
+
+  body.append(
+    h('div', { class: 'io-box' },
+      h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Text'), status),
+      input,
+    ),
+    h('div', { class: 'qr-controls' },
+      h('label', { class: 'qr-control' }, h('span', { class: 'part-label' }, 'Voice'), voiceSelect),
+      rateRow, pitchRow, volumeRow,
+    ),
+    h('div', { class: 'tool-actions' },
+      h('button', { class: 'btn btn-primary', type: 'button', onClick: speak }, 'Speak'),
+      pause,
+      h('button', {
+        class: 'btn btn-ghost', type: 'button',
+        onClick: () => { synth.cancel(); pause.textContent = 'Pause'; status.textContent = 'Stopped'; },
+      }, 'Stop'),
+    ),
+    h('p', { class: 'tool-hint' }, 'Voices come from the operating system, so the list differs between machines. Nothing is sent anywhere — synthesis happens on this device.'),
+  );
+  input.focus();
+}
+
 export default [
   { id: 'text-case', category: 'Text', name: 'Case Converter', title: 'Case Converter', desc: 'Convert text between UPPER, lower, Title, camelCase, snake_case, kebab-case and more.', mount: caseMount },
   { id: 'text-regex', category: 'Text', name: 'Regex Tester', title: 'Regex Tester', desc: 'Test a regular expression against sample text with live match highlighting and capture groups.', mount: regexMount },
@@ -261,4 +350,9 @@ export default [
   },
   { id: 'text-count', category: 'Text', name: 'Word Counter', title: 'Word & Character Counter', desc: 'Live counts of characters, words, lines, sentences and UTF-8 bytes.', mount: counterMount },
   { id: 'text-lorem', category: 'Text', name: 'Lorem Ipsum', title: 'Lorem Ipsum Generator', desc: 'Generate placeholder paragraphs.', mount: loremMount },
+  {
+    id: 'text-speech', category: 'Text', name: 'Text to Speech', title: 'Text to Speech',
+    desc: 'Read text aloud with any voice installed on this device, with rate, pitch and volume controls.',
+    mount: speechMount,
+  },
 ];

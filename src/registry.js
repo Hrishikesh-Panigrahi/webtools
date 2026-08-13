@@ -11,9 +11,13 @@ import hash from './tools/hash.js';
 import cipher from './tools/cipher.js';
 import color from './tools/color.js';
 import convert from './tools/convert.js';
+import image from './tools/image.js';
+import network from './tools/network.js';
+import qr from './tools/qr.js';
 
 export const tools = [
-  ...json, ...url, ...encode, ...text, ...markdown, ...ai, ...code, ...convert, ...color, ...hash, ...cipher,
+  ...json, ...url, ...encode, ...text, ...markdown, ...ai, ...code, ...convert,
+  ...color, ...image, ...network, ...qr, ...hash, ...cipher,
 ];
 
 // Preserve first-seen category order.

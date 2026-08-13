@@ -285,9 +285,72 @@
 .md-list li { margin: .2em 0; }
 .md-hr { border: none; border-top: 1px solid var(--border); margin: 1em 0; }
 
+/* ===================== Control rows (QR, gradient, image, speech) ===================== */
+.qr-controls { display: flex; flex-wrap: wrap; gap: .9rem 1.4rem; align-items: center; margin-top: .9rem; }
+.qr-control { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+.qr-control > .slider { width: 120px; }
+.qr-control > .kv-value { min-width: 44px; }
+/* Selects size to their longest option (voice names run long) — let them shrink. */
+.qr-control > .select { min-width: 0; }
+.qr-control[hidden] { display: none; }
+
+/* ===================== QR code ===================== */
+.qr-preview {
+  display: grid; place-items: center; padding: 1rem; min-height: 180px;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2);
+}
+.qr-canvas { max-width: 100%; height: auto; image-rendering: pixelated; border-radius: 4px; }
+
+/* ===================== Gradient generator ===================== */
+.gradient-preview {
+  min-height: 140px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.gradient-stops { display: flex; flex-direction: column; gap: .5rem; }
+.gradient-stop { display: grid; grid-template-columns: auto 1fr 48px 30px; gap: .6rem; align-items: center; }
+.gradient-stop .slider { width: 100%; }
+.gradient-remove:disabled { opacity: .4; cursor: default; }
+
+/* ===================== File drop zone ===================== */
+.dropzone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem;
+  padding: 1.6rem 1rem; text-align: center; cursor: pointer;
+  border: 1px dashed var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text-dim); font-size: .85rem;
+  transition: border-color .12s, background .12s;
+}
+.dropzone:hover, .dropzone:focus-visible { border-color: var(--accent); color: var(--text); }
+.dropzone.dragover { border-color: var(--accent); background: var(--accent-weak); color: var(--text); }
+.dropzone-status { font-family: var(--mono); font-size: .78rem; color: var(--text-dim); }
+.dropzone-status:empty { display: none; }
+
+/* ===================== Image tools ===================== */
+.meta-results { display: flex; flex-direction: column; gap: .9rem; }
+.meta-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .9rem; align-items: start; }
+.preview-box { margin-top: .9rem; }
+.image-preview {
+  max-width: 100%; max-height: 320px; align-self: start;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2);
+}
+.gps-card { border: 1px solid var(--accent); border-radius: var(--radius); padding: .7rem; gap: .5rem; }
+.gps-link { font-size: .8rem; color: var(--accent); }
+
+/* ===================== Network tools ===================== */
+.selectable { user-select: all; }
+.ua-notes { display: flex; flex-direction: column; }
+.ua-badge {
+  font-size: .72rem; font-weight: 600; padding: .15rem .45rem; border-radius: 4px;
+  color: var(--ok); background: var(--surface-2); border: 1px solid var(--border);
+}
+.ua-badge.bot { color: var(--bad); }
+
 /* ===================== Responsive (components) ===================== */
 @media (max-width: 820px) {
   .io-grid, .url-parts { grid-template-columns: 1fr; }
+  .qr-controls { gap: .7rem 1rem; }
+  .qr-control { flex: 1 1 100%; justify-content: space-between; }
+  .qr-control > .slider { flex: 1; width: auto; }
+  .gradient-stop { grid-template-columns: auto 1fr 44px 30px; }
 }
 @media (max-width: 720px) {
   .color-preview { flex-direction: column; }

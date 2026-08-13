@@ -13,13 +13,32 @@ backend, no tracking.
 | **JSON** | Prettify (collapsible tree, full-width for large docs) · Minify · Validate · Sort Keys · Compare (git-style diff) |
 | **URL**  | Editable Parser — edit any part or query param and the URL rebuilds live |
 | **Encode** | Base64 · URL · HTML escape/unescape · JWT decode |
-| **Text** | Case Converter · Regex Tester · Text Diff · Slugify · Sort & Dedupe · Word Counter · Markdown Preview · Lorem Ipsum |
+| **Text** | Case Converter · Regex Tester · Text Diff · Slugify · Sort & Dedupe · Word Counter · Markdown Preview · Lorem Ipsum · Text to Speech |
 | **AI** | Token Predictor — estimate prompt tokens, per-model cost and context-window usage |
 | **Code** | cURL → fetch() · JSON → TypeScript · Cron Expression Explainer |
-| **Convert** | Unix Timestamp ↔ Date · Number Base (dec/hex/oct/bin) · CSV ⇄ JSON |
-| **Color** | HEX ↔ RGB ↔ HSL with picker and swatch |
+| **Convert** | Unix Timestamp ↔ Date · Number Base (dec/hex/oct/bin) · CSV ⇄ JSON · Unit Converter (12 categories, every unit at once) |
+| **Color** | HEX ↔ RGB ↔ HSL with picker and swatch · CSS Gradient Generator (linear/radial/conic) |
+| **Image** | EXIF Viewer (camera, GPS, XMP) · Metadata Cleaner (lossless strip) · Format Converter (PNG/JPEG/WebP + resize) |
+| **Network** | IP Subnet Calculator (IPv4 + IPv6, with subnetting) · User-Agent Parser |
+| **Generate** | QR Code Generator — text, URL, WiFi, vCard; PNG or SVG |
 | **Crypto** | SHA-1/256/384/512 · UUID v4 · Password Generator |
 | **Cipher** | Caesar · ROT13 |
+
+### QR codes and image metadata, without a server
+
+Both are the kind of tool that normally means an upload. Here they don't.
+
+The QR encoder ([`src/qr.js`](src/qr.js)) implements ISO/IEC 18004 directly:
+numeric, alphanumeric and byte modes, versions 1–40, all four error-correction
+levels, Reed–Solomon over GF(256), and mask selection by the spec's penalty
+rules. It picks the narrowest mode and smallest version your data fits, so
+`12345678` becomes a far denser symbol than a byte-mode-only encoder would give.
+
+The image tools parse containers without decoding pixels
+([`src/imagefile.js`](src/imagefile.js), [`src/exif.js`](src/exif.js)). The
+cleaner therefore strips EXIF, GPS, XMP, IPTC, comments and timestamps by
+*copying the image data through byte for byte* — no re-encoding, no quality
+loss — while keeping the ICC colour profile so the picture still renders right.
 
 ### Token Predictor
 
@@ -54,8 +73,29 @@ npm install
 npm run dev       # http://localhost:5173
 npm run build     # production build -> dist/
 npm run preview   # preview the production build
+npm test          # run the unit tests (node --test, no dependencies)
 npm run prices    # refresh src/prices.json from the upstream price feeds
 ```
+
+## Tests
+
+`npm test` runs Node's built-in test runner over the pure-logic modules — no test
+framework, no dependencies. The interesting one is
+[`test/qr.test.js`](test/qr.test.js): rather than comparing against stored
+matrices, it **decodes what the encoder produced** with an independent reader
+([`test/helpers/qr-scanner.js`](test/helpers/qr-scanner.js)) that re-derives
+everything from the finished symbol the way a scanner does — read the format
+info and check its BCH code, rebuild the function-pattern map from the version,
+undo the mask, walk the zigzag, de-interleave the blocks, verify Reed–Solomon
+parity is zero, then parse the payload. It keeps its own copy of the block
+tables, so a typo in the encoder's tables shows up as a failed decode instead of
+a matching mistake on both sides. All 40 versions × 4 error-correction levels ×
+3 modes round-trip.
+
+The image tests build JPEG, PNG and WebP fixtures with metadata whose exact
+contents are known ([`test/helpers/image-fixtures.js`](test/helpers/image-fixtures.js)),
+then assert that stripping removes every metadata block, keeps the colour
+profile, leaves the pixel data byte-identical, and is idempotent.
 
 `npm run prices` is the only script that touches the network, and it is never part
 of `build` — the committed `src/prices.json` is the build input, so the site
@@ -74,12 +114,21 @@ src/
   diff.js           Line diff (LCS)
   tokens.js         Token estimation + model price table
   cron.js           Cron parsing, explanation and next-run projection
+  qr.js             QR encoding (ISO/IEC 18004) + SVG/canvas rendering
+  exif.js           TIFF/EXIF tag decoding and GPS resolution
+  imagefile.js      JPEG/PNG/WebP container walking and metadata stripping
+  ip.js             IPv4 + IPv6 parsing and subnet arithmetic
+  units.js          Unit conversion tables
+  useragent.js      User-Agent string parsing
+  format.js         Byte and percentage formatters
   styles/           base.css (tokens + shell), components.css (widgets)
   tools/            One module per category
 ```
 
-Pure logic (`diff.js`, `tokens.js`, `cron.js`) is kept out of the tool modules so
-it can be reasoned about on its own.
+Pure logic (`diff.js`, `tokens.js`, `cron.js`, `qr.js`, `exif.js`,
+`imagefile.js`, `ip.js`, `units.js`, `useragent.js`) is kept out of the tool
+modules so it can be reasoned about on its own. Each one is a plain ES module
+with no DOM dependency, so it can be imported straight into `node --test`.
 
 ## Adding a tool
 

@@ -1,4 +1,4 @@
-import { h, copyBtn } from '../dom.js';
+import { h, copyBtn, icons } from '../dom.js';
 
 function parseColor(str) {
   str = str.trim();
@@ -97,6 +97,105 @@ function colorMount(body) {
   input.focus();
 }
 
+// --- Gradient generator ---
+
+const GRADIENT_KINDS = {
+  Linear: { css: (stops, angle) => `linear-gradient(${angle}deg, ${stops})`, angleLabel: 'Angle' },
+  Radial: { css: (stops) => `radial-gradient(circle at center, ${stops})` },
+  Conic: { css: (stops, angle) => `conic-gradient(from ${angle}deg, ${stops})`, angleLabel: 'Start angle' },
+};
+
+const randomHex = () => '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+
+function gradientMount(body) {
+  const kind = h('select', { class: 'select' }, ...Object.keys(GRADIENT_KINDS).map((name) => h('option', {}, name)));
+  const angle = h('input', { class: 'slider', type: 'range', min: '0', max: '360', value: '90' });
+  const angleValue = h('span', { class: 'kv-value' }, '90°');
+  const angleRow = h('label', { class: 'qr-control' }, h('span', { class: 'part-label' }, 'Angle'), angle, angleValue);
+  const preview = h('div', { class: 'gradient-preview' });
+  const stopList = h('div', { class: 'gradient-stops' });
+  const output = h('textarea', { class: 'io-textarea', readonly: true, spellcheck: 'false' });
+
+  // Each stop owns its controls; `render` reads their live values every time.
+  const stops = [];
+
+  const cssValue = () => {
+    const ordered = [...stops].sort((a, b) => Number(a.position.value) - Number(b.position.value));
+    const text = ordered.map((stop) => `${stop.color.value} ${stop.position.value}%`).join(', ');
+    return GRADIENT_KINDS[kind.value].css(text, angle.value);
+  };
+
+  const render = () => {
+    const gradient = cssValue();
+    preview.style.background = gradient;
+    output.value = `background: ${gradient};`;
+    angleRow.hidden = !GRADIENT_KINDS[kind.value].angleLabel;
+    angleRow.firstChild.textContent = GRADIENT_KINDS[kind.value].angleLabel ?? 'Angle';
+    angleValue.textContent = `${angle.value}°`;
+    stopList.querySelectorAll('.gradient-remove').forEach((button) => { button.disabled = stops.length <= 2; });
+  };
+
+  function addStop(color = randomHex(), position = 100) {
+    const colorField = h('input', { type: 'color', class: 'color-picker', value: color });
+    const positionField = h('input', { class: 'slider', type: 'range', min: '0', max: '100', value: String(position) });
+    const readout = h('span', { class: 'kv-value' }, `${position}%`);
+    const remove = h('button', {
+      class: 'btn-icon-sm gradient-remove', type: 'button', 'aria-label': 'Remove this stop', html: icons.trash,
+    });
+
+    const row = h('div', { class: 'gradient-stop' }, colorField, positionField, readout, remove);
+    const stop = { color: colorField, position: positionField, row };
+    stops.push(stop);
+    stopList.append(row);
+
+    colorField.addEventListener('input', render);
+    positionField.addEventListener('input', () => { readout.textContent = `${positionField.value}%`; render(); });
+    remove.addEventListener('click', () => {
+      if (stops.length <= 2) return;
+      stops.splice(stops.indexOf(stop), 1);
+      row.remove();
+      render();
+    });
+    return stop;
+  }
+
+  addStop('#4f7cff', 0);
+  addStop('#b14fff', 100);
+
+  [kind, angle].forEach((control) => control.addEventListener('input', render));
+
+  body.append(
+    preview,
+    h('div', { class: 'qr-controls' },
+      h('label', { class: 'qr-control' }, h('span', { class: 'part-label' }, 'Type'), kind),
+      angleRow,
+    ),
+    h('div', { class: 'io-box' },
+      h('div', { class: 'io-label-row' },
+        h('span', { class: 'io-label' }, 'Colour stops'),
+        h('div', { class: 'io-actions' },
+          h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onClick: () => { addStop(); render(); } }, 'Add stop'),
+          h('button', {
+            class: 'btn btn-ghost btn-sm', type: 'button',
+            onClick: () => { stops.forEach((stop) => { stop.color.value = randomHex(); }); render(); },
+          }, 'Randomise'),
+        ),
+      ),
+      stopList,
+    ),
+    h('div', { class: 'io-box' },
+      h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'CSS'), copyBtn(() => output.value)),
+      output,
+    ),
+  );
+  render();
+}
+
 export default [
   { id: 'color-convert', category: 'Color', name: 'Converter', title: 'Color Converter', desc: 'Convert between HEX, RGB and HSL, with a live swatch and picker.', mount: colorMount },
+  {
+    id: 'color-gradient', category: 'Color', name: 'Gradient', title: 'CSS Gradient Generator',
+    desc: 'Build a linear, radial or conic gradient from any number of colour stops and copy the CSS.',
+    mount: gradientMount,
+  },
 ];

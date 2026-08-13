@@ -1,0 +1,318 @@
+import { h, copyBtn } from '../dom.js';
+import { filePicker } from '../panel.js';
+import { inspectImage, stripImageMetadata, detectFormat } from '../imagefile.js';
+import { formatBytes, formatDelta } from '../format.js';
+
+const readArrayBuffer = (file) => file.arrayBuffer();
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const anchor = h('a', { href: url, download: filename });
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * An <img> that swaps its object URL cleanly each time a new file is shown, and
+ * hides its own box when the browser cannot decode what it was given.
+ */
+function previewImage() {
+  const image = h('img', { class: 'image-preview', alt: '' });
+  let currentUrl = null;
+  const box = h('div', { class: 'io-box preview-box', hidden: true },
+    h('div', { class: 'io-label' }, 'Preview'), image);
+
+  image.addEventListener('error', () => { box.hidden = true; });
+
+  return {
+    box,
+    setLabel(text) { box.firstChild.textContent = text; },
+    show(blob) {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+      currentUrl = URL.createObjectURL(blob);
+      box.hidden = false;
+      image.src = currentUrl;
+    },
+    hide() { box.hidden = true; },
+  };
+}
+
+const statTile = (label, value) => h('div', { class: 'stat' },
+  h('div', { class: 'stat-value' }, value),
+  h('div', { class: 'stat-label' }, label));
+
+const tagRow = (name, value) => h('div', { class: 'kv-row' },
+  h('span', { class: 'kv-label' }, name),
+  h('span', { class: 'kv-value' }, value || '—'));
+
+// --- EXIF viewer ---
+
+function locationCard(location) {
+  const fields = [
+    ['Decimal', location.decimal],
+    ['DMS', location.dms],
+    ['Altitude', location.altitude === null ? '—' : `${location.altitude.toFixed(1)} m`],
+  ];
+  return h('div', { class: 'io-box gps-card' },
+    h('div', { class: 'io-label-row' },
+      h('span', { class: 'io-label' }, 'Location found in this photo'),
+      copyBtn(() => location.decimal),
+    ),
+    h('div', { class: 'kv-list' }, ...fields.map(([name, value]) => tagRow(name, value))),
+    h('a', { class: 'gps-link', href: location.mapUrl, target: '_blank', rel: 'noopener noreferrer' }, 'Open in OpenStreetMap ↗'),
+  );
+}
+
+function exifMount(body) {
+  const results = h('div', { class: 'meta-results' });
+  const error = h('div', { class: 'io-error' });
+  const preview = previewImage();
+  preview.setLabel('Image');
+
+  let report = null;
+
+  const asJson = () => (report
+    ? JSON.stringify(Object.fromEntries(report.groups.map((group) => [
+      group.name, Object.fromEntries(group.tags.map((tag) => [tag.name, tag.value])),
+    ])), null, 2)
+    : '');
+
+  const render = (file) => {
+    results.innerHTML = '';
+    if (!report) return;
+
+    results.append(h('div', { class: 'stat-grid' },
+      statTile('Format', report.format.toUpperCase()),
+      statTile('Dimensions', report.width ? `${report.width} × ${report.height}` : '—'),
+      statTile('File size', formatBytes(file.size)),
+      statTile('Metadata tags', String(report.groups.reduce((sum, group) => sum + group.tags.length, 0))),
+    ));
+
+    if (report.location) results.append(locationCard(report.location));
+
+    if (!report.groups.length) {
+      results.append(h('p', { class: 'tool-hint' }, 'No EXIF, XMP or text metadata in this file — it is already clean.'));
+      return;
+    }
+
+    const grid = h('div', { class: 'meta-groups' });
+    for (const group of report.groups) {
+      grid.append(h('div', { class: 'io-box' },
+        h('div', { class: 'io-label' }, group.name),
+        h('div', { class: 'kv-list' }, ...group.tags.map((tag) => tagRow(tag.name, tag.value))),
+      ));
+    }
+    results.append(grid, h('div', { class: 'tool-actions' },
+      h('span', { class: 'kbd-hint' }, 'Every tag, as JSON:'),
+      copyBtn(asJson),
+    ));
+  };
+
+  const picker = filePicker({
+    accept: 'image/*',
+    hint: 'Drop a photo here, or click to choose — JPEG, PNG or WebP',
+    onFile: async (file) => {
+      error.textContent = '';
+      results.innerHTML = '';
+      report = null;
+      preview.show(file);
+      try {
+        report = inspectImage(await readArrayBuffer(file));
+      } catch (failure) {
+        error.textContent = failure.message;
+        return;
+      }
+      render(file);
+    },
+  });
+
+  body.append(picker, error, preview.box, results);
+}
+
+// --- Metadata cleaner ---
+
+function cleanerMount(body) {
+  const error = h('div', { class: 'io-error' });
+  const summary = h('div', { class: 'meta-results' });
+  const preview = previewImage();
+  preview.setLabel('Cleaned image');
+
+  const picker = filePicker({
+    accept: 'image/jpeg,image/png,image/webp',
+    hint: 'Drop a photo here to strip its metadata — JPEG, PNG or WebP',
+    onFile: async (file) => {
+      error.textContent = '';
+      summary.innerHTML = '';
+      preview.hide();
+
+      let result;
+      try {
+        result = stripImageMetadata(await readArrayBuffer(file));
+      } catch (failure) {
+        error.textContent = failure.message;
+        return;
+      }
+
+      const cleaned = new Blob([result.bytes], { type: file.type || `image/${result.format}` });
+      preview.show(cleaned);
+
+      const saved = file.size - cleaned.size;
+      summary.append(h('div', { class: 'stat-grid' },
+        statTile('Original', formatBytes(file.size)),
+        statTile('Cleaned', formatBytes(cleaned.size)),
+        statTile('Removed', formatBytes(saved)),
+        statTile('Change', formatDelta(file.size, cleaned.size)),
+      ));
+
+      summary.append(result.removed.length
+        ? h('div', { class: 'io-box' },
+            h('div', { class: 'io-label' }, `Removed ${result.removed.length} block${result.removed.length === 1 ? '' : 's'}`),
+            h('div', { class: 'kv-list' }, ...result.removed.map((block) => tagRow(block.name, formatBytes(block.bytes)))))
+        : h('p', { class: 'tool-hint' }, 'Nothing to remove — this file carried no metadata.'));
+
+      const stem = file.name.replace(/\.[^.]+$/, '');
+      summary.append(h('div', { class: 'tool-actions' },
+        h('button', {
+          class: 'btn btn-primary', type: 'button',
+          onClick: () => download(cleaned, `${stem}-clean.${result.format === 'jpeg' ? 'jpg' : result.format}`),
+        }, 'Download cleaned image'),
+      ));
+    },
+  });
+
+  body.append(
+    picker,
+    error,
+    h('p', { class: 'tool-hint' }, 'Pixels are copied through untouched, so there is no re-encoding loss. EXIF, GPS, XMP, IPTC, comments and timestamps are dropped; the colour profile is kept so the image still renders correctly.'),
+    summary,
+    preview.box,
+  );
+}
+
+// --- Format converter ---
+
+const OUTPUT_TYPES = { PNG: 'image/png', JPEG: 'image/jpeg', WebP: 'image/webp' };
+
+/** Fit within a bounding box without enlarging or changing the aspect ratio. */
+function fitWithin(width, height, limit) {
+  if (!limit || (width <= limit && height <= limit)) return { width, height };
+  const ratio = Math.min(limit / width, limit / height);
+  return { width: Math.round(width * ratio), height: Math.round(height * ratio) };
+}
+
+function converterMount(body) {
+  const target = h('select', { class: 'select' }, ...Object.keys(OUTPUT_TYPES).map((name) => h('option', {}, name)));
+  const quality = h('input', { class: 'slider', type: 'range', min: '10', max: '100', value: '85' });
+  const qualityValue = h('span', { class: 'kv-value' }, '85%');
+  const maxSide = h('input', { class: 'part-input', type: 'number', min: '0', step: '10', placeholder: 'no limit' });
+  const error = h('div', { class: 'io-error' });
+  const summary = h('div', { class: 'meta-results' });
+  const preview = previewImage();
+  preview.setLabel('Result');
+
+  let source = null;
+  let sourceFile = null;
+
+  const qualityRow = h('label', { class: 'qr-control' },
+    h('span', { class: 'part-label' }, 'Quality'), quality, qualityValue);
+
+  const convert = async () => {
+    if (!source) return;
+    error.textContent = '';
+    const type = OUTPUT_TYPES[target.value];
+    qualityRow.hidden = type === 'image/png';
+
+    const limit = Number(maxSide.value) || 0;
+    const { width, height } = fitWithin(source.width, source.height, limit);
+
+    const canvas = h('canvas', { width, height });
+    const context = canvas.getContext('2d');
+    context.imageSmoothingQuality = 'high';
+    // JPEG has no alpha; without a white base, transparency renders as black.
+    if (type === 'image/jpeg') {
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, width, height);
+    }
+    context.drawImage(source, 0, 0, width, height);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, Number(quality.value) / 100));
+    if (!blob) { error.textContent = `This browser cannot write ${target.value}.`; return; }
+
+    preview.show(blob);
+    summary.innerHTML = '';
+    summary.append(h('div', { class: 'stat-grid' },
+      statTile('Source (upright)', `${source.width} × ${source.height}`),
+      statTile('Output', `${width} × ${height}`),
+      statTile('Size', `${formatBytes(sourceFile.size)} → ${formatBytes(blob.size)}`),
+      statTile('Change', formatDelta(sourceFile.size, blob.size)),
+    ));
+
+    const stem = sourceFile.name.replace(/\.[^.]+$/, '');
+    const extension = target.value === 'JPEG' ? 'jpg' : target.value.toLowerCase();
+    summary.append(h('div', { class: 'tool-actions' },
+      h('button', {
+        class: 'btn btn-primary', type: 'button',
+        onClick: () => download(blob, `${stem}.${extension}`),
+      }, `Download ${target.value}`),
+    ));
+  };
+
+  const picker = filePicker({
+    accept: 'image/*',
+    hint: 'Drop an image here, or click to choose',
+    onFile: async (file) => {
+      error.textContent = '';
+      sourceFile = file;
+      try {
+        // Bake in the EXIF rotation rather than relying on a tag the output may not carry.
+        source = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      } catch {
+        error.textContent = 'This browser could not decode that image.';
+        source = null;
+        return;
+      }
+      const detected = detectFormat(new Uint8Array(await readArrayBuffer(file)));
+      // Default to a different format than the input, since converting to itself is rarely the point.
+      if (detected === 'png') target.value = 'WebP';
+      else if (detected === 'jpeg') target.value = 'WebP';
+      else target.value = 'PNG';
+      convert();
+    },
+  });
+
+  quality.addEventListener('input', () => { qualityValue.textContent = `${quality.value}%`; convert(); });
+  [target, maxSide].forEach((control) => control.addEventListener('input', convert));
+
+  body.append(
+    picker,
+    error,
+    h('div', { class: 'qr-controls' },
+      h('label', { class: 'qr-control' }, h('span', { class: 'part-label' }, 'Convert to'), target),
+      qualityRow,
+      h('label', { class: 'qr-control' }, h('span', { class: 'part-label' }, 'Max width/height'), maxSide),
+    ),
+    summary,
+    preview.box,
+    h('p', { class: 'tool-hint' }, 'Re-encoding drops every metadata block as a side effect, including GPS, and bakes in any EXIF rotation — so a photo tagged "rotate 90°" comes out upright with its width and height swapped. Resizing never enlarges: the longest side is capped and the aspect ratio kept.'),
+  );
+}
+
+export default [
+  {
+    id: 'image-exif', category: 'Image', name: 'EXIF Viewer', title: 'Image Metadata Viewer',
+    desc: 'Read the EXIF, GPS, XMP and text metadata hidden in a photo. The file never leaves the browser.',
+    mount: exifMount,
+  },
+  {
+    id: 'image-clean', category: 'Image', name: 'Metadata Cleaner', title: 'Image Metadata Cleaner',
+    desc: 'Strip EXIF, GPS and other identifying metadata out of a photo without re-encoding a single pixel.',
+    mount: cleanerMount,
+  },
+  {
+    id: 'image-convert', category: 'Image', name: 'Format Converter', title: 'Image Format Converter',
+    desc: 'Convert between PNG, JPEG and WebP, with optional resizing and a quality control.',
+    mount: converterMount,
+  },
+];

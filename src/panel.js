@@ -2,6 +2,7 @@
 import { h, copyBtn, pasteBtn, downloadBtn, clearField, onRunKey, icons } from './dom.js';
 import { encodeState } from './state.js';
 import { diffLines, diffSign } from './diff.js';
+import { formatBytes } from './format.js';
 
 /**
  * The most common shape: one input textarea -> one output textarea via `transform`.
@@ -142,6 +143,44 @@ export function toggleRow(labels, checkedByDefault = []) {
     row.append(h('label', { class: 'toggle' }, box, h('span', {}, label)));
   }
   return { row, boxes };
+}
+
+/**
+ * A drop-or-click file zone for the tools that read binary files. The chosen
+ * file's name and size replace the hint once something is loaded.
+ *
+ * @param {Object} opts
+ * @param {string} [opts.accept]  an accept attribute, e.g. 'image/*'
+ * @param {string} [opts.hint]    the idle prompt
+ * @param {(file:File)=>void} opts.onFile
+ */
+export function filePicker({ accept = '', hint = 'Drop a file here, or click to choose', onFile }) {
+  const input = h('input', { type: 'file', accept, hidden: true });
+  const status = h('span', { class: 'dropzone-status' });
+  const zone = h('label', { class: 'dropzone', tabindex: '0' },
+    input,
+    h('span', { class: 'dropzone-hint' }, hint),
+    status,
+  );
+
+  const load = (file) => {
+    if (!file) return;
+    status.textContent = `${file.name} · ${formatBytes(file.size)}`;
+    onFile(file);
+  };
+
+  input.addEventListener('change', () => load(input.files[0]));
+  zone.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); input.click(); }
+  });
+  zone.addEventListener('dragover', (event) => { event.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', (event) => {
+    event.preventDefault();
+    zone.classList.remove('dragover');
+    load(event.dataTransfer.files[0]);
+  });
+  return zone;
 }
 
 /** A label + value row for read-only figures (costs, counts, next run times). */

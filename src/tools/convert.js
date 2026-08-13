@@ -1,5 +1,6 @@
 import { h, copyBtn } from '../dom.js';
 import { toggleRow } from '../panel.js';
+import { unitCategories, unitsIn, convertAll, formatQuantity } from '../units.js';
 
 // --- Unix timestamp <-> human date ---
 
@@ -254,8 +255,71 @@ function csvMount(body) {
   input.focus();
 }
 
+// --- Unit converter ---
+
+// One grouped select rather than a category picker plus a unit picker: every
+// option exists from the start, so a restored share link always finds its unit.
+// Option values are "Category:symbol", keeping them unique across categories.
+const unitOptionValue = (categoryName, symbol) => `${categoryName}:${symbol}`;
+
+// Showing every unit at once beats a from/to pair: the answer you wanted and
+// the one you didn't know you wanted are both on screen.
+function unitMount(body) {
+  const amount = h('input', { class: 'url-field', spellcheck: 'false', placeholder: 'e.g. 12.5' });
+  const from = h('select', { class: 'select' }, ...unitCategories.map((categoryName) => h(
+    'optgroup',
+    { label: categoryName },
+    ...unitsIn(categoryName).map((unit) => h(
+      'option',
+      { value: unitOptionValue(categoryName, unit.symbol) },
+      `${unit.name} (${unit.symbol})`,
+    )),
+  )));
+  const results = h('div', { class: 'color-outputs' });
+  const error = h('div', { class: 'io-error' });
+
+  const run = () => {
+    results.innerHTML = '';
+    error.textContent = '';
+    const raw = amount.value.trim();
+    if (!raw) return;
+    const value = Number(raw);
+    if (!Number.isFinite(value)) { error.textContent = 'Enter a number.'; return; }
+
+    const [categoryName, symbol] = from.value.split(':');
+    for (const { unit, value: converted } of convertAll(categoryName, value, symbol)) {
+      const field = h('input', {
+        class: 'part-input', readonly: true, spellcheck: 'false', value: formatQuantity(converted),
+      });
+      results.append(h('div', { class: 'color-out-row' },
+        h('span', { class: 'part-label' }, `${unit.name} (${unit.symbol})`),
+        field,
+        copyBtn(() => field.value),
+      ));
+    }
+  };
+
+  amount.addEventListener('input', run);
+  from.addEventListener('change', run);
+
+  body.append(
+    h('div', { class: 'io-box' },
+      h('div', { class: 'io-label' }, 'Convert'),
+      h('div', { class: 'color-input-row' }, amount, from),
+      error,
+    ),
+    results,
+  );
+  amount.focus();
+}
+
 export default [
   { id: 'time-unix', category: 'Convert', name: 'Timestamp', title: 'Unix Timestamp Converter', desc: 'Convert between Unix timestamps and human-readable dates, both ways.', mount: timestampMount },
+  {
+    id: 'unit-convert', category: 'Convert', name: 'Units', title: 'Unit Converter',
+    desc: 'Convert length, mass, temperature, data, speed and more — every unit in the category at once.',
+    mount: unitMount,
+  },
   { id: 'num-base', category: 'Convert', name: 'Number Base', title: 'Number Base Converter', desc: 'Convert integers between decimal, hex, octal and binary (arbitrary precision).', mount: baseMount },
   {
     id: 'csv-json', category: 'Convert', name: 'CSV ⇄ JSON', title: 'CSV ⇄ JSON Converter',
