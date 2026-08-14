@@ -11,7 +11,7 @@ backend, no tracking.
 | Category | Tools |
 |----------|-------|
 | **JSON** | Prettify (collapsible tree, full-width for large docs) · Minify · Validate · Sort Keys · Compare (git-style diff) |
-| **URL**  | Editable Parser — edit any part or query param and the URL rebuilds live |
+| **URL**  | Parser — edit any part or query param and the URL rebuilds live |
 | **Encode** | Base64 · URL · HTML escape/unescape · JWT decode |
 | **Text** | Case Converter · Regex Tester · Text Diff · Slugify · Sort & Dedupe · Word Counter · Markdown Preview · Lorem Ipsum · Text to Speech |
 | **AI** | Token Predictor — estimate prompt tokens, per-model cost and context-window usage |

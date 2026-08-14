@@ -121,7 +121,7 @@ function urlParserMount(body) {
 
 export default [
   {
-    id: 'url-parse', category: 'URL', name: 'Parser (editable)', title: 'URL Parser',
+    id: 'url-parse', category: 'URL', name: 'Parser', title: 'URL Parser',
     desc: 'Break a URL into editable parts. Change any field or query parameter and the full URL rebuilds instantly.',
     mount: urlParserMount,
   },
