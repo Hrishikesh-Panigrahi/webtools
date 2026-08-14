@@ -193,6 +193,77 @@ function decodeExif(bytes, block) {
   }
 }
 
+const xmpGroup = (byteLength) => ({
+  name: 'XMP',
+  tags: [{ name: 'Packet', value: `${byteLength} bytes of XMP/RDF` }],
+});
+
+// Each reader answers the same shape, so `inspectImage` never branches on format.
+// `parts` are the container's blocks, `exif` a decoded TIFF block if one was
+// found, and `groups` any metadata the container holds outside of EXIF.
+
+function readJpeg(bytes) {
+  const { segments } = walkJpeg(bytes);
+  const groups = [];
+  let exif = null;
+
+  for (const segment of segments) {
+    if (segment.marker !== 0xe1) continue;
+    if (ascii(bytes, segment.dataStart, EXIF_PREFIX.length) === EXIF_PREFIX) {
+      exif = decodeExif(bytes, { start: segment.dataStart + EXIF_PREFIX.length, end: segment.end, tiffOffset: 0 });
+    } else if (ascii(bytes, segment.dataStart, XMP_PREFIX.length) === XMP_PREFIX) {
+      groups.push(xmpGroup(segment.end - segment.dataStart));
+    }
+  }
+  return { parts: segments, size: jpegDimensions(bytes, segments), exif, groups };
+}
+
+/** A tIME chunk is seven big-endian fields: year, then month through second. */
+function readPngTime(bytes, chunk) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const pad = (value) => String(value).padStart(2, '0');
+  const year = view.getUint16(chunk.dataStart);
+  const [month, day, hour, minute, second] = [2, 3, 4, 5, 6].map((offset) => bytes[chunk.dataStart + offset]);
+  return { name: 'Modified', value: `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(second)} UTC` };
+}
+
+function readPng(bytes) {
+  const chunks = walkPng(bytes);
+  const textTags = [];
+  let exif = null;
+
+  for (const chunk of chunks) {
+    if (chunk.type === 'eXIf') {
+      exif = decodeExif(bytes, { start: chunk.dataStart, end: chunk.dataEnd, tiffOffset: 0 });
+    } else if (chunk.type === 'tIME') {
+      textTags.push(readPngTime(bytes, chunk));
+    } else if (PNG_METADATA_CHUNKS.has(chunk.type)) {
+      const text = readPngText(bytes, chunk);
+      if (text) textTags.push(text);
+    }
+  }
+  return {
+    parts: chunks,
+    size: pngDimensions(bytes, chunks),
+    exif,
+    groups: textTags.length ? [{ name: 'PNG text', tags: textTags }] : [],
+  };
+}
+
+function readWebp(bytes) {
+  const chunks = walkWebp(bytes);
+  const groups = [];
+  let exif = null;
+
+  for (const chunk of chunks) {
+    if (chunk.type === 'EXIF') exif = decodeExif(bytes, { start: chunk.dataStart, end: chunk.dataEnd, tiffOffset: 0 });
+    if (chunk.type === 'XMP ') groups.push(xmpGroup(chunk.dataEnd - chunk.dataStart));
+  }
+  return { parts: chunks, size: webpDimensions(bytes, chunks), exif, groups };
+}
+
+const READERS = { jpeg: readJpeg, png: readPng, webp: readWebp };
+
 /**
  * Inspect an image without decoding it.
  *
@@ -204,64 +275,16 @@ export function inspectImage(buffer) {
   const bytes = new Uint8Array(buffer);
   const format = detectFormat(bytes);
   if (!format) throw new Error('Unrecognised image format.');
-  if (format === 'gif' || format === 'heif') {
-    throw new Error(`${format.toUpperCase()} files are not supported yet. Try JPEG, PNG or WebP.`);
-  }
 
-  let parts = [];
-  let size = null;
-  let exif = null;
-  const extraGroups = [];
+  const read = READERS[format];
+  if (!read) throw new Error(`${format.toUpperCase()} files are not supported yet. Try JPEG, PNG or WebP.`);
 
-  if (format === 'jpeg') {
-    const { segments } = walkJpeg(bytes);
-    parts = segments;
-    size = jpegDimensions(bytes, segments);
-    for (const segment of segments) {
-      if (segment.marker !== 0xe1) continue;
-      const header = ascii(bytes, segment.dataStart, 6);
-      if (header === EXIF_PREFIX) {
-        exif = decodeExif(bytes, { start: segment.dataStart + 6, end: segment.end, tiffOffset: 0 });
-      } else if (ascii(bytes, segment.dataStart, XMP_PREFIX.length) === XMP_PREFIX) {
-        extraGroups.push({ name: 'XMP', tags: [{ name: 'Packet', value: `${segment.end - segment.dataStart} bytes of XMP/RDF` }] });
-      }
-    }
-  } else if (format === 'png') {
-    parts = walkPng(bytes);
-    size = pngDimensions(bytes, parts);
-    const textTags = [];
-    for (const chunk of parts) {
-      if (chunk.type === 'eXIf') exif = decodeExif(bytes, { start: chunk.dataStart, end: chunk.dataEnd, tiffOffset: 0 });
-      else if (PNG_METADATA_CHUNKS.has(chunk.type) && chunk.type !== 'tIME') {
-        const text = readPngText(bytes, chunk);
-        if (text) textTags.push(text);
-      } else if (chunk.type === 'tIME') {
-        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-        const [year, month, day, hour, minute, second] = [
-          view.getUint16(chunk.dataStart), bytes[chunk.dataStart + 2], bytes[chunk.dataStart + 3],
-          bytes[chunk.dataStart + 4], bytes[chunk.dataStart + 5], bytes[chunk.dataStart + 6],
-        ];
-        const pad = (n) => String(n).padStart(2, '0');
-        textTags.push({ name: 'Modified', value: `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(second)} UTC` });
-      }
-    }
-    if (textTags.length) extraGroups.push({ name: 'PNG text', tags: textTags });
-  } else {
-    parts = walkWebp(bytes);
-    size = webpDimensions(bytes, parts);
-    for (const chunk of parts) {
-      if (chunk.type === 'EXIF') exif = decodeExif(bytes, { start: chunk.dataStart, end: chunk.dataEnd, tiffOffset: 0 });
-      if (chunk.type === 'XMP ') {
-        extraGroups.push({ name: 'XMP', tags: [{ name: 'Packet', value: `${chunk.dataEnd - chunk.dataStart} bytes of XMP/RDF` }] });
-      }
-    }
-  }
-
+  const { parts, size, exif, groups } = read(bytes);
   return {
     format,
     width: size?.width ?? null,
     height: size?.height ?? null,
-    groups: [...(exif?.groups ?? []), ...extraGroups],
+    groups: [...(exif?.groups ?? []), ...groups],
     location: exif?.location ?? null,
     blocks: parts.map((part) => ({ name: part.name, bytes: part.end - part.start, isMetadata: part.isMetadata })),
   };

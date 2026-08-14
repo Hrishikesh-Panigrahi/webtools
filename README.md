@@ -55,7 +55,7 @@ field and needs a key), so the script reads two independent public feeds
 and [models.dev](https://models.dev/api.json)) and **only accepts a value when
 both agree**. A disagreement fails the run for a human to look at. The result is
 committed, so the app stays static and offline, and a price change always arrives
-as a reviewable diff. A weekly GitHub Action opens that PR automatically.
+as a reviewable diff. Run `npm run prices` when you want to pick up a change.
 
 ## Productivity
 
@@ -63,6 +63,7 @@ as a reviewable diff. A weekly GitHub Action opens that PR automatically.
 - **Shareable links** — the link button in the header copies a URL that restores the current tool *and* its input.
 - **Input persistence** — what you type is remembered per tool across reloads.
 - **Drag & drop** — drop a text file onto any input to load it.
+- **Resizable panes** — drag the divider between input and output. Each tool remembers its own split; double-click the divider to even it up again.
 - **Paste / Download / Swap** — one-click paste into inputs, download outputs, and pipe an encoder's result straight into its decoder.
 
 ## Getting started
@@ -113,6 +114,7 @@ src/
   diff.js           Line diff (LCS)
   tokens.js         Token estimation + model price table
   cron.js           Cron parsing, explanation and next-run projection
+  split.js          Draggable divider for the two-pane layouts
   qr.js             QR encoding (ISO/IEC 18004) + SVG/canvas rendering
   exif.js           TIFF/EXIF tag decoding and GPS resolution
   imagefile.js      JPEG/PNG/WebP container walking and metadata stripping

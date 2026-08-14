@@ -212,6 +212,35 @@ function cleanerMount(body) {
 // --- Format converter ---
 
 const OUTPUT_TYPES = { PNG: 'image/png', JPEG: 'image/jpeg', WebP: 'image/webp' };
+const FILE_EXTENSIONS = { PNG: 'png', JPEG: 'jpg', WebP: 'webp' };
+
+function drawResized(source, { width, height }, type) {
+  const canvas = h('canvas', { width, height });
+  const context = canvas.getContext('2d');
+  context.imageSmoothingQuality = 'high';
+  // JPEG has no alpha; without a white base, transparency renders as black.
+  if (type === 'image/jpeg') {
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, width, height);
+  }
+  context.drawImage(source, 0, 0, width, height);
+  return canvas;
+}
+
+const encodeCanvas = (canvas, type, quality) => new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+
+function conversionSummary({ file, blob, sourceSize, output, label, onDownload }) {
+  return [
+    h('div', { class: 'stat-grid' },
+      statTile('Source', `${sourceSize.width} × ${sourceSize.height}`),
+      statTile('Output', `${output.width} × ${output.height}`),
+      statTile('Size', `${formatBytes(file.size)} → ${formatBytes(blob.size)}`),
+      statTile('Change', formatDelta(file.size, blob.size)),
+    ),
+    h('div', { class: 'tool-actions' },
+      h('button', { class: 'btn btn-primary', type: 'button', onClick: onDownload }, `Download ${label}`)),
+  ];
+}
 
 /** Fit within a bounding box without enlarging or changing the aspect ratio. */
 function fitWithin(width, height, limit) {
@@ -244,47 +273,27 @@ function converterMount(body) {
     if (!source) return;
     const request = ++latestRender;
     error.textContent = '';
-    const type = OUTPUT_TYPES[target.value];
+
+    const label = target.value;
+    const type = OUTPUT_TYPES[label];
     qualityRow.hidden = type === 'image/png';
-    // Capture the file this run describes; a newer drop must not relabel it.
+
+    // Capture what this run describes; a newer drop must not relabel its results.
     const file = sourceFile;
+    const sourceSize = { width: source.width, height: source.height };
+    const output = fitWithin(source.width, source.height, Number(maxSide.value) || 0);
 
-    const limit = Number(maxSide.value) || 0;
-    const { width, height } = fitWithin(source.width, source.height, limit);
-
-    const canvas = h('canvas', { width, height });
-    const context = canvas.getContext('2d');
-    context.imageSmoothingQuality = 'high';
-    // JPEG has no alpha; without a white base, transparency renders as black.
-    if (type === 'image/jpeg') {
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, width, height);
-    }
-    context.drawImage(source, 0, 0, width, height);
-
-    const sourceWidth = source.width;
-    const sourceHeight = source.height;
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, Number(quality.value) / 100));
+    const canvas = drawResized(source, output, type);
+    const blob = await encodeCanvas(canvas, type, Number(quality.value) / 100);
     if (request !== latestRender) return; // a newer setting or file already won
-    if (!blob) { error.textContent = `This browser cannot write ${target.value}.`; return; }
+    if (!blob) { error.textContent = `This browser cannot write ${label}.`; return; }
 
     preview.show(blob);
     summary.innerHTML = '';
-    summary.append(h('div', { class: 'stat-grid' },
-      statTile('Source', `${sourceWidth} × ${sourceHeight}`),
-      statTile('Output', `${width} × ${height}`),
-      statTile('Size', `${formatBytes(file.size)} → ${formatBytes(blob.size)}`),
-      statTile('Change', formatDelta(file.size, blob.size)),
-    ));
-
-    const stem = file.name.replace(/\.[^.]+$/, '');
-    const extension = target.value === 'JPEG' ? 'jpg' : target.value.toLowerCase();
-    summary.append(h('div', { class: 'tool-actions' },
-      h('button', {
-        class: 'btn btn-primary', type: 'button',
-        onClick: () => download(blob, `${stem}.${extension}`),
-      }, `Download ${target.value}`),
-    ));
+    summary.append(...conversionSummary({
+      file, blob, sourceSize, output, label,
+      onDownload: () => download(blob, `${file.name.replace(/\.[^.]+$/, '')}.${FILE_EXTENSIONS[label]}`),
+    }));
   };
 
   const picker = filePicker({

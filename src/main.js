@@ -1,6 +1,7 @@
 import './styles/base.css';
 import './styles/components.css';
 import { h, icons, categoryIcons } from './dom.js';
+import { makeSplittable } from './split.js';
 import { encodeState, decodeState } from './state.js';
 import { tools, categories } from './registry.js';
 
@@ -201,6 +202,22 @@ function nameControls(body) {
   }
 }
 
+// Pane widths are remembered per tool, like the inputs: a tree view earns a
+// wider output pane, while an encoder is usually happiest at half and half.
+const SPLIT_PREFIX = 'webtools-split:';
+
+function wireSplitters(body, id) {
+  const saved = Number(localStorage.getItem(SPLIT_PREFIX + id));
+  const ratio = saved > 0 && saved < 1 ? saved : undefined;
+  for (const grid of body.querySelectorAll('.io-grid')) {
+    if (grid.childElementCount !== 2) continue;
+    makeSplittable(grid, {
+      ratio,
+      onChange: (next) => localStorage.setItem(SPLIT_PREFIX + id, String(next)),
+    });
+  }
+}
+
 // Drop a text file onto any editable textarea to load its contents.
 function wireFileDrop(body) {
   body.querySelectorAll('textarea:not([readonly])').forEach((ta) => {
@@ -245,6 +262,7 @@ function render() {
   restoreState(body, id, query);
   bindStateSaving(body, id);
   wireFileDrop(body);
+  wireSplitters(body, id);
   nameControls(body);
   main.scrollTop = 0;
   highlightActive();

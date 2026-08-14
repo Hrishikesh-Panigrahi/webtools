@@ -32,6 +32,7 @@ registry.js    the tool list
 dom.js         h() element builder, copyBtn, clearField, onRunKey, icons, categoryIcons
 panel.js       transformTool, ioBox, diffView, toggleRow, keyValueRow, filePicker
 state.js       tool state encoding (persistence + share links)
+split.js       draggable divider, wired onto any two-pane .io-grid by the shell
 diff.js        line diff; tokens.js token estimation; cron.js cron schedules
 qr.js          QR encoding (ISO/IEC 18004) + SVG/canvas rendering
 exif.js        TIFF/EXIF tags; imagefile.js JPEG/PNG/WebP containers + strip
