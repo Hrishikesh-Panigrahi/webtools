@@ -12,7 +12,21 @@ indistinguishable in style from what already exists.
 - Subtle, not flashy. Avoid heavy shadows, glows, and strong gradients. Communicate state
   with a border-color or background change, not a colored halo.
 - Consistent spacing — small, even gaps. When unsure, match the spacing of a nearby element.
-- Round corners with `var(--radius)`. Keep type sizes within the existing scale.
+- Keep type sizes within the existing scale.
+
+## Shape and state tokens
+Use these rather than inventing values, or the surface stops matching itself.
+- Radius: `--radius-sm` (6px) for chips and small icon buttons, `--radius` (8px) for
+  buttons, fields and selects, `--radius-lg` (11px) for cards and panes — textareas,
+  stat tiles, `.kv-list`, previews, the diff and JSON panes.
+- Focus: `--ring`, always with `border-color: var(--accent)`. `base.css` already applies
+  it to every control on `:focus-visible`; add a `:focus` rule only where the element
+  should also ring on mouse focus, as text fields do.
+- Depth: `--shadow-sm` for a resting button, `--shadow-pop` for a primary button's hover.
+  Nothing else should cast a shadow.
+- Hierarchy: primary action is `.btn.btn-primary`, secondary is a plain `.btn`, and a
+  tertiary or destructive-adjacent one is `.btn-ghost`. Copy and icon buttons stay
+  borderless until hover so they don't compete with the real actions.
 
 ## Theming (required)
 - Never hardcode a color. Use the CSS variables in `styles/base.css`
