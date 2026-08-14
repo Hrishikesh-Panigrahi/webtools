@@ -1,0 +1,27 @@
+name: Scheduled tasks
+
+# GitHub only runs workflows from `.github/workflows`, so this file has to live
+# here. It is a trigger and nothing else: each job runs one script from
+# `scripts/scheduled/`, where the behaviour can be read and run on its own.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1' # Mondays, 06:17 UTC. Model prices change a few times a year.
+  workflow_dispatch:
+
+jobs:
+  refresh-prices:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - run: node scripts/scheduled/refresh-prices.mjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

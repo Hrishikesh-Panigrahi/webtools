@@ -39,6 +39,7 @@ exif.js        TIFF/EXIF tags; imagefile.js JPEG/PNG/WebP containers + strip
 ip.js          IPv4/IPv6 subnet maths; units.js unit tables; useragent.js UA parsing
 format.js      formatBytes / formatDelta
 prices.json    generated model price table (npm run prices) — don't hand-edit
+scripts/scheduled/  jobs run on a timer; the workflow YAML only triggers them
 styles/        base.css (tokens + shell), components.css (widgets)
 tools/         one module per category
 ```

@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test \"test/**/*.test.js\"",
-    "prices": "node scripts/update-prices.mjs"
+    "prices": "node scripts/update-prices.mjs",
+    "prices:pr": "node scripts/scheduled/refresh-prices.mjs"
   },
   "devDependencies": {
     "vite": "^8.1.5"

@@ -55,7 +55,8 @@ field and needs a key), so the script reads two independent public feeds
 and [models.dev](https://models.dev/api.json)) and **only accepts a value when
 both agree**. A disagreement fails the run for a human to look at. The result is
 committed, so the app stays static and offline, and a price change always arrives
-as a reviewable diff. Run `npm run prices` when you want to pick up a change.
+as a reviewable diff. A weekly job in [`scripts/scheduled/`](scripts/scheduled/)
+opens that PR; `npm run prices` does the refresh alone if you want it by hand.
 
 ## Productivity
 
