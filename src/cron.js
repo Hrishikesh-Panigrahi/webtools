@@ -31,7 +31,7 @@ function fieldValue(text, spec) {
   // Cron accepts both 0 and 7 for Sunday.
   const value = spec.label === 'day-of-week' && text === '7' ? 0 : Number(text);
   if (value < spec.min || value > spec.max) {
-    throw new Error(`${spec.label} must be ${spec.min}–${spec.max} — got ${text}.`);
+    throw new Error(`${spec.label} must be ${spec.min}–${spec.max}, but got ${text}.`);
   }
   return value;
 }
@@ -72,7 +72,7 @@ export function parseCron(expression) {
   const normalized = ALIASES[trimmed.toLowerCase()] ?? trimmed;
   const parts = normalized.split(/\s+/).filter(Boolean);
   if (parts.length !== 5) {
-    throw new Error(`Expected 5 fields — minute hour day-of-month month day-of-week — but found ${parts.length}.`);
+    throw new Error(`Expected 5 fields (minute hour day-of-month month day-of-week), but found ${parts.length}.`);
   }
   return FIELDS.map((spec, index) => parseField(parts[index], spec));
 }

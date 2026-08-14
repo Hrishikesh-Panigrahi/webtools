@@ -256,7 +256,7 @@ function cronMount(body) {
 
     meaning.textContent = describeCron(fields);
     if (daysAreEitherOr(fields)) {
-      caveat.textContent = 'Both day fields are restricted, so cron fires when either matches — not only when both do.';
+      caveat.textContent = 'Both day fields are restricted, so cron fires when either one matches, not only when both do.';
     }
     const upcoming = nextRuns(fields, new Date(), RUN_COUNT);
     runs.forEach(({ value }, index) => {
@@ -284,7 +284,7 @@ function cronMount(body) {
 export default [
   {
     id: 'curl-fetch', category: 'Code', name: 'cURL → fetch', title: 'cURL to fetch()',
-    desc: 'Turn a copied cURL command into a ready-to-paste fetch() call, with headers and JSON or form bodies converted.',
+    desc: 'Turn a copied cURL command into a fetch() call, headers and body included.',
     mount: transformTool({
       live: true, inputLabel: 'cURL command', outputLabel: 'JavaScript', downloadName: 'request.js',
       placeholder: 'curl -X POST https://api.example.com/users \\\n  -H \'content-type: application/json\' \\\n  -d \'{"name":"Ada"}\'',
@@ -302,7 +302,7 @@ export default [
   },
   {
     id: 'cron-explain', category: 'Code', name: 'Cron Expression', title: 'Cron Expression Explainer',
-    desc: 'Read back a cron schedule in plain English and show when it actually fires next.',
+    desc: 'Read a cron schedule back in plain English, and see when it fires next.',
     mount: cronMount,
   },
 ];

@@ -172,13 +172,13 @@ function gradientMount(body) {
     ),
     h('div', { class: 'io-box' },
       h('div', { class: 'io-label-row' },
-        h('span', { class: 'io-label' }, 'Colour stops'),
+        h('span', { class: 'io-label' }, 'Color stops'),
         h('div', { class: 'io-actions' },
           h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onClick: () => { addStop(); render(); } }, 'Add stop'),
           h('button', {
             class: 'btn btn-ghost btn-sm', type: 'button',
             onClick: () => { stops.forEach((stop) => { stop.color.value = randomHex(); }); render(); },
-          }, 'Randomise'),
+          }, 'Randomize'),
         ),
       ),
       stopList,
@@ -195,7 +195,7 @@ export default [
   { id: 'color-convert', category: 'Color', name: 'Converter', title: 'Color Converter', desc: 'Convert between HEX, RGB and HSL, with a live swatch and picker.', mount: colorMount },
   {
     id: 'color-gradient', category: 'Color', name: 'Gradient', title: 'CSS Gradient Generator',
-    desc: 'Build a linear, radial or conic gradient from any number of colour stops and copy the CSS.',
+    desc: 'Build a linear, radial or conic gradient and copy the CSS.',
     mount: gradientMount,
   },
 ];

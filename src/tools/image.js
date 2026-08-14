@@ -57,7 +57,7 @@ function locationCard(location) {
   ];
   return h('div', { class: 'io-box gps-card' },
     h('div', { class: 'io-label-row' },
-      h('span', { class: 'io-label' }, 'Location found in this photo'),
+      h('span', { class: 'io-label' }, 'Location'),
       copyBtn(() => location.decimal),
     ),
     h('div', { class: 'kv-list' }, ...fields.map(([name, value]) => tagRow(name, value))),
@@ -95,7 +95,7 @@ function exifMount(body) {
     if (report.location) results.append(locationCard(report.location));
 
     if (!report.groups.length) {
-      results.append(h('p', { class: 'tool-hint' }, 'No EXIF, XMP or text metadata in this file — it is already clean.'));
+      results.append(h('p', { class: 'tool-hint' }, 'No metadata in this file.'));
       return;
     }
 
@@ -107,14 +107,14 @@ function exifMount(body) {
       ));
     }
     results.append(grid, h('div', { class: 'tool-actions' },
-      h('span', { class: 'kbd-hint' }, 'Every tag, as JSON:'),
+      h('span', { class: 'kbd-hint' }, 'All tags as JSON'),
       copyBtn(asJson),
     ));
   };
 
   const picker = filePicker({
     accept: 'image/*',
-    hint: 'Drop a photo here, or click to choose — JPEG, PNG or WebP',
+    hint: 'Drop a photo here, or click to choose. JPEG, PNG or WebP.',
     onFile: async (file) => {
       const request = ++latestLoad;
       error.textContent = '';
@@ -156,7 +156,7 @@ function cleanerMount(body) {
 
   const picker = filePicker({
     accept: 'image/jpeg,image/png,image/webp',
-    hint: 'Drop a photo here to strip its metadata — JPEG, PNG or WebP',
+    hint: 'Drop a photo here to strip its metadata. JPEG, PNG or WebP.',
     onFile: async (file) => {
       const request = ++latestLoad;
       error.textContent = '';
@@ -188,7 +188,7 @@ function cleanerMount(body) {
         ? h('div', { class: 'io-box' },
             h('div', { class: 'io-label' }, `Removed ${result.removed.length} block${result.removed.length === 1 ? '' : 's'}`),
             h('div', { class: 'kv-list' }, ...result.removed.map((block) => tagRow(block.name, formatBytes(block.bytes)))))
-        : h('p', { class: 'tool-hint' }, 'Nothing to remove — this file carried no metadata.'));
+        : h('p', { class: 'tool-hint' }, 'This file had no metadata to remove.'));
 
       const stem = file.name.replace(/\.[^.]+$/, '');
       summary.append(h('div', { class: 'tool-actions' },
@@ -203,7 +203,7 @@ function cleanerMount(body) {
   body.append(
     picker,
     error,
-    h('p', { class: 'tool-hint' }, 'Pixels are copied through untouched, so there is no re-encoding loss. EXIF, GPS, XMP, IPTC, comments and timestamps are dropped; the colour profile is kept so the image still renders correctly.'),
+    h('p', { class: 'tool-hint' }, 'Image data is copied as-is, so nothing is re-compressed. Drops EXIF, GPS, XMP, IPTC, comments and timestamps. Keeps the color profile.'),
     summary,
     preview.box,
   );
@@ -271,7 +271,7 @@ function converterMount(body) {
     preview.show(blob);
     summary.innerHTML = '';
     summary.append(h('div', { class: 'stat-grid' },
-      statTile('Source (upright)', `${sourceWidth} × ${sourceHeight}`),
+      statTile('Source', `${sourceWidth} × ${sourceHeight}`),
       statTile('Output', `${width} × ${height}`),
       statTile('Size', `${formatBytes(file.size)} → ${formatBytes(blob.size)}`),
       statTile('Change', formatDelta(file.size, blob.size)),
@@ -333,24 +333,24 @@ function converterMount(body) {
     ),
     summary,
     preview.box,
-    h('p', { class: 'tool-hint' }, 'Re-encoding drops every metadata block as a side effect, including GPS, and bakes in any EXIF rotation — so a photo tagged "rotate 90°" comes out upright with its width and height swapped. Resizing never enlarges: the longest side is capped and the aspect ratio kept.'),
+    h('p', { class: 'tool-hint' }, 'Re-encoding removes all metadata, including GPS, and applies any EXIF rotation. Resizing caps the longest side and never enlarges.'),
   );
 }
 
 export default [
   {
     id: 'image-exif', category: 'Image', name: 'EXIF Viewer', title: 'Image Metadata Viewer',
-    desc: 'Read the EXIF, GPS, XMP and text metadata hidden in a photo. The file never leaves the browser.',
+    desc: 'See the EXIF, GPS and XMP metadata stored in a photo.',
     mount: exifMount,
   },
   {
     id: 'image-clean', category: 'Image', name: 'Metadata Cleaner', title: 'Image Metadata Cleaner',
-    desc: 'Strip EXIF, GPS and other identifying metadata out of a photo without re-encoding a single pixel.',
+    desc: 'Remove EXIF, GPS and other metadata from a photo, without re-encoding it.',
     mount: cleanerMount,
   },
   {
     id: 'image-convert', category: 'Image', name: 'Format Converter', title: 'Image Format Converter',
-    desc: 'Convert between PNG, JPEG and WebP, with optional resizing and a quality control.',
+    desc: 'Convert between PNG, JPEG and WebP. Resize and set quality if you need to.',
     mount: converterMount,
   },
 ];

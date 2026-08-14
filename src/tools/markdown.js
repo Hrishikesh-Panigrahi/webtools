@@ -112,12 +112,12 @@ function markdownMount(body) {
         preview,
       ),
     ),
-    h('p', { class: 'tool-hint' }, 'Copy takes the generated HTML — your Markdown source stays in the left pane.'),
+    h('p', { class: 'tool-hint' }, 'Copy gives you the generated HTML. Your Markdown stays in the left pane.'),
   );
   input.focus();
   render();
 }
 
 export default [
-  { id: 'md-preview', category: 'Text', name: 'Markdown', title: 'Markdown Preview', desc: 'Live preview of a common Markdown subset, with the generated HTML one click away. Raw HTML is escaped and link URLs are sanitized.', mount: markdownMount },
+  { id: 'md-preview', category: 'Text', name: 'Markdown', title: 'Markdown Preview', desc: 'Live preview of common Markdown, with the generated HTML one click away. Raw HTML is escaped and link URLs are sanitized.', mount: markdownMount },
 ];

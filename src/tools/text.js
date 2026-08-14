@@ -331,7 +331,7 @@ function speechMount(body) {
         onClick: () => { synth.cancel(); pause.textContent = 'Pause'; status.textContent = 'Stopped'; },
       }, 'Stop'),
     ),
-    h('p', { class: 'tool-hint' }, 'Voices come from the operating system, so the list differs between machines. Nothing is sent anywhere — synthesis happens on this device.'),
+    h('p', { class: 'tool-hint' }, 'Voices come from your operating system, so the list differs between machines.'),
   );
   input.focus();
 }
@@ -339,7 +339,7 @@ function speechMount(body) {
 export default [
   { id: 'text-case', category: 'Text', name: 'Case Converter', title: 'Case Converter', desc: 'Convert text between UPPER, lower, Title, camelCase, snake_case, kebab-case and more.', mount: caseMount },
   { id: 'text-regex', category: 'Text', name: 'Regex Tester', title: 'Regex Tester', desc: 'Test a regular expression against sample text with live match highlighting and capture groups.', mount: regexMount },
-  { id: 'text-diff', category: 'Text', name: 'Text Diff', title: 'Text Diff', desc: 'Line-by-line diff of two blocks of text. Green lines are added; red lines are removed.', mount: diffMount },
+  { id: 'text-diff', category: 'Text', name: 'Diff', title: 'Text Diff', desc: 'Line-by-line diff of two blocks of text. Green lines are added; red lines are removed.', mount: diffMount },
   {
     id: 'text-slugify', category: 'Text', name: 'Slugify', title: 'Slugify',
     desc: 'Turn any text into a clean, URL-friendly slug.',
@@ -349,15 +349,15 @@ export default [
     }),
   },
   {
-    id: 'text-lines', category: 'Text', name: 'Sort & Dedupe', title: 'Line Sorter & Deduplicator',
-    desc: 'Sort, trim and de-duplicate a list of lines — for cleaning up log output, ID lists and config blocks.',
+    id: 'text-lines', category: 'Text', name: 'Sort & Dedupe', title: 'Sort & Deduplicate Lines',
+    desc: 'Sort, trim and de-duplicate a list of lines. Useful for log output, ID lists and config blocks.',
     mount: linesMount,
   },
   { id: 'text-count', category: 'Text', name: 'Word Counter', title: 'Word & Character Counter', desc: 'Live counts of characters, words, lines, sentences and UTF-8 bytes.', mount: counterMount },
   { id: 'text-lorem', category: 'Text', name: 'Lorem Ipsum', title: 'Lorem Ipsum Generator', desc: 'Generate placeholder paragraphs.', mount: loremMount },
   {
     id: 'text-speech', category: 'Text', name: 'Text to Speech', title: 'Text to Speech',
-    desc: 'Read text aloud with any voice installed on this device, with rate, pitch and volume controls.',
+    desc: 'Read text aloud using the voices installed on your device.',
     mount: speechMount,
   },
 ];

@@ -73,7 +73,7 @@ function urlParserMount(body) {
     try {
       u = new URL(raw);
     } catch {
-      error.textContent = 'Invalid URL — include a protocol, e.g. https://…';
+      error.textContent = 'Invalid URL. Include a protocol, e.g. https://…';
       return;
     }
     error.textContent = '';

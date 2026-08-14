@@ -200,14 +200,14 @@ function interleaveBlocks(dataCodewords, version, level) {
 
 // ---------- Matrix construction ----------
 
-/** Centre coordinates of the alignment patterns for a version. */
-function alignmentCentres(version) {
+/** Center coordinates of the alignment patterns for a version. */
+function alignmentCenters(version) {
   if (version === 1) return [];
   const count = Math.floor(version / 7) + 2;
   const step = version === 32 ? 26 : Math.ceil((version * 4 + 4) / (count * 2 - 2)) * 2;
-  const centres = [6];
-  for (let position = version * 4 + 10; centres.length < count; position -= step) centres.splice(1, 0, position);
-  return centres;
+  const centers = [6];
+  for (let position = version * 4 + 10; centers.length < count; position -= step) centers.splice(1, 0, position);
+  return centers;
 }
 
 /** A matrix of `null` (free) cells plus a parallel map of reserved function modules. */
@@ -270,9 +270,9 @@ function drawFunctionPatterns(grid, version) {
     grid.set(i, 6, isDark);
   }
 
-  const centres = alignmentCentres(version);
-  for (const row of centres) {
-    for (const column of centres) {
+  const centers = alignmentCenters(version);
+  for (const row of centers) {
+    for (const column of centers) {
       const isFinderCorner = (row === 6 && column === 6)
         || (row === 6 && column === last - 6)
         || (row === last - 6 && column === 6);

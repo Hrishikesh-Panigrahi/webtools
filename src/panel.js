@@ -110,7 +110,7 @@ export function ioBox(label, node, { copy } = {}) {
 
 /**
  * The git-style diff view shared by JSON Compare and Text Diff: an added/removed
- * summary above one colour-coded row per line.
+ * summary above one color-coded row per line.
  * Throws Error(message) when the inputs are too large to align.
  */
 export function diffView(fromLines, toLines, identicalNote) {

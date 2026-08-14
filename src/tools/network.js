@@ -60,7 +60,7 @@ function ipMount(body) {
   body.append(
     h('div', { class: 'io-box' },
       h('div', { class: 'io-label-row' },
-        h('span', { class: 'io-label' }, 'Address, with an optional prefix or netmask'),
+        h('span', { class: 'io-label' }, 'Address'),
         copyBtn(asText),
       ),
       h('div', { class: 'color-input-row' }, field, splitInto),
@@ -68,7 +68,7 @@ function ipMount(body) {
     ),
     facts,
     subnetBox,
-    h('p', { class: 'tool-hint' }, 'Accepts CIDR, a dotted netmask, or a bare address. Set a smaller prefix in the second box to carve the network into subnets.'),
+    h('p', { class: 'tool-hint' }, 'Accepts CIDR, a dotted netmask, or a bare address. Put a smaller prefix in the second box to split the network.'),
   );
   field.focus();
 }
@@ -113,7 +113,7 @@ function userAgentMount(body) {
   body.append(
     h('div', { class: 'io-box' },
       h('div', { class: 'io-label-row' },
-        h('span', { class: 'io-label' }, 'User-Agent string'),
+        h('span', { class: 'io-label' }, 'User-Agent'),
         h('div', { class: 'io-actions' }, badge, useMine),
       ),
       field,
@@ -128,12 +128,12 @@ function userAgentMount(body) {
 export default [
   {
     id: 'net-ip', category: 'Network', name: 'IP / CIDR', title: 'IP Subnet Calculator',
-    desc: 'Work out the network, broadcast, mask and host range for any IPv4 or IPv6 block — and split it into subnets.',
+    desc: 'Network, broadcast, mask and host range for an IPv4 or IPv6 block, plus subnet splitting.',
     mount: ipMount,
   },
   {
     id: 'net-useragent', category: 'Network', name: 'User-Agent', title: 'User-Agent Parser',
-    desc: 'Break a User-Agent string into browser, engine, OS and device, and tell a bot from a person.',
+    desc: 'Break a User-Agent string into browser, engine, OS and device, and spot bots.',
     mount: userAgentMount,
   },
 ];

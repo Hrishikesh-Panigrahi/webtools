@@ -130,7 +130,7 @@ function qrMount(body) {
     ),
     h('div', { class: 'kv-list' }, versionRow.row, modeRow.row, sizeRow.row, capacityRow.row),
     actions,
-    h('p', { class: 'tool-hint' }, 'A higher error-correction level survives more damage but needs a larger symbol. Numeric and uppercase-only text pack far denser than mixed case.'),
+    h('p', { class: 'tool-hint' }, 'Higher error correction survives more damage, at the cost of a bigger symbol. Digits and uppercase text pack tighter than mixed case.'),
   );
   input.focus();
 }
@@ -138,7 +138,7 @@ function qrMount(body) {
 export default [
   {
     id: 'qr-generate', category: 'Generate', name: 'QR Code', title: 'QR Code Generator',
-    desc: 'Build a QR code from any text, URL, WiFi login or contact card. Encodes locally — nothing is uploaded — and downloads as PNG or SVG.',
+    desc: 'Make a QR code from text, a URL, WiFi credentials or a contact card. Downloads as PNG or SVG.',
     mount: qrMount,
   },
 ];

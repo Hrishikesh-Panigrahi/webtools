@@ -96,7 +96,7 @@ function tokenMount(body) {
 
   body.append(
     h('p', { class: 'tool-hint' },
-      'Counts are estimated from how tokenizers split text, not from a real vocabulary — expect to be within about 10% on prose and code. Nothing is uploaded.'),
+      'Counts are estimated from how tokenizers split text rather than a real vocabulary, so expect to be within about 10% on prose and code.'),
     h('div', { class: 'io-box' }, h('div', { class: 'io-label' }, 'Text'), input),
     stats,
     h('div', { class: 'tool-actions' },
@@ -132,7 +132,7 @@ function tokenMount(body) {
 export default [
   {
     id: 'ai-tokens', category: 'AI', name: 'Token Predictor', title: 'LLM Token Predictor',
-    desc: 'Estimate how many tokens a prompt will use, what it costs on each Claude model, and how much of the context window it eats.',
+    desc: 'Estimate how many tokens a prompt uses, what it costs on each Claude model, and how much of the context window it fills.',
     mount: tokenMount,
   },
 ];

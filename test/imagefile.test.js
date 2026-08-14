@@ -38,7 +38,7 @@ test('JPEG EXIF tags are decoded into readable values', () => {
   assert.equal(tags['Focal Length'], '85 mm');
   assert.equal(tags.Flash, 'Fired, forced on', 'the firing mode lives in bits 3-4');
   assert.equal(tags['Lens Model'], 'RF85mm F1.2 L USM');
-  assert.equal(tags.Taken, '2026-08-13 10:30:00', 'EXIF colon dates are normalised');
+  assert.equal(tags.Taken, '2026-08-13 10:30:00', 'EXIF colon dates are normalized');
 });
 
 test('EXIF groups are separated and XMP is noticed', () => {
@@ -94,7 +94,7 @@ test('metadata blocks are flagged, rendering blocks are not', () => {
   assert.equal(named['EXIF / XMP'], true);
   assert.equal(named['Photoshop / IPTC'], true);
   assert.equal(named.Comment, true);
-  assert.equal(named['ICC colour profile'], false, 'the colour profile affects rendering');
+  assert.equal(named['ICC color profile'], false, 'the color profile affects rendering');
   assert.equal(named['JFIF header'], false);
   assert.equal(named['Baseline frame'], false);
 });
@@ -114,7 +114,7 @@ test('stripping a JPEG removes every metadata block and keeps the rest', () => {
   assert.deepEqual(after.groups, [], 'no metadata survives');
   assert.equal(after.location, null, 'GPS is gone');
   assert.deepEqual([after.width, after.height], [1, 1], 'the frame still parses');
-  assert.ok(after.blocks.some((block) => block.name === 'ICC colour profile'), 'the profile is kept');
+  assert.ok(after.blocks.some((block) => block.name === 'ICC color profile'), 'the profile is kept');
 });
 
 test('stripping a PNG keeps the critical chunks', () => {

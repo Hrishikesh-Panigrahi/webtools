@@ -23,17 +23,17 @@ export function detectFormat(bytes) {
 // Markers that carry no length field, so the parser must not read one.
 const JPEG_STANDALONE = new Set([0x01, 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8, 0xd9]);
 
-// APP0 (JFIF), APP2 (ICC profile) and APP14 (Adobe colour transform) affect how
+// APP0 (JFIF), APP2 (ICC profile) and APP14 (Adobe color transform) affect how
 // the image renders, so a privacy strip keeps them. Everything else in the
 // APPn/COM range is descriptive and gets dropped.
 const JPEG_KEEP_APPS = new Set([0xe0, 0xe2, 0xee]);
 const isJpegMetadata = (marker) => (marker >= 0xe1 && marker <= 0xef && !JPEG_KEEP_APPS.has(marker)) || marker === 0xfe;
 
 const JPEG_SEGMENT_NAMES = {
-  0xe0: 'JFIF header', 0xe1: 'EXIF / XMP', 0xe2: 'ICC colour profile', 0xe3: 'Kodak metadata',
+  0xe0: 'JFIF header', 0xe1: 'EXIF / XMP', 0xe2: 'ICC color profile', 0xe3: 'Kodak metadata',
   0xe4: 'FlashPix', 0xe5: 'Ricoh metadata', 0xe6: 'Vendor metadata', 0xe7: 'Vendor metadata',
   0xe8: 'SPIFF', 0xe9: 'Vendor metadata', 0xea: 'Vendor metadata', 0xeb: 'Vendor metadata',
-  0xec: 'Picture info', 0xed: 'Photoshop / IPTC', 0xee: 'Adobe colour', 0xef: 'Vendor metadata',
+  0xec: 'Picture info', 0xed: 'Photoshop / IPTC', 0xee: 'Adobe color', 0xef: 'Vendor metadata',
   0xfe: 'Comment',
   0xc0: 'Baseline frame', 0xc1: 'Extended frame', 0xc2: 'Progressive frame',
   0xc4: 'Huffman tables', 0xdb: 'Quantisation tables', 0xdd: 'Restart interval',
@@ -85,7 +85,7 @@ const PNG_METADATA_CHUNKS = new Set(['tEXt', 'zTXt', 'iTXt', 'eXIf', 'tIME', 'dS
 const PNG_CHUNK_NAMES = {
   tEXt: 'Text comment', zTXt: 'Compressed text', iTXt: 'International text',
   eXIf: 'EXIF block', tIME: 'Last-modified time', dSIG: 'Digital signature',
-  iCCP: 'ICC colour profile', pHYs: 'Pixel dimensions',
+  iCCP: 'ICC color profile', pHYs: 'Pixel dimensions',
 };
 
 function walkPng(bytes) {
@@ -131,7 +131,7 @@ function readPngText(bytes, chunk) {
 // ---------- WebP ----------
 
 const WEBP_METADATA_CHUNKS = new Set(['EXIF', 'XMP ']);
-const WEBP_CHUNK_NAMES = { EXIF: 'EXIF block', 'XMP ': 'XMP metadata', ICCP: 'ICC colour profile', VP8X: 'Extended header' };
+const WEBP_CHUNK_NAMES = { EXIF: 'EXIF block', 'XMP ': 'XMP metadata', ICCP: 'ICC color profile', VP8X: 'Extended header' };
 
 function walkWebp(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -205,7 +205,7 @@ export function inspectImage(buffer) {
   const format = detectFormat(bytes);
   if (!format) throw new Error('Unrecognised image format.');
   if (format === 'gif' || format === 'heif') {
-    throw new Error(`${format.toUpperCase()} files are not supported yet — try JPEG, PNG or WebP.`);
+    throw new Error(`${format.toUpperCase()} files are not supported yet. Try JPEG, PNG or WebP.`);
   }
 
   let parts = [];

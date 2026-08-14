@@ -22,7 +22,7 @@ export function diffLines(from, to) {
   const changedFrom = from.slice(head, from.length - tail);
   const changedTo = to.slice(head, to.length - tail);
   if (changedFrom.length * changedTo.length > MAX_TABLE_CELLS) {
-    throw new Error('Too many differing lines to diff — compare smaller sections.');
+    throw new Error('Too many differing lines to diff. Try comparing smaller sections.');
   }
 
   const unchanged = (lines) => lines.map((text) => ({ type: 'same', text }));

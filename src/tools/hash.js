@@ -27,7 +27,7 @@ function hashMount(body) {
     } catch {
       if (request !== latest) return;
       output.value = '';
-      error.textContent = 'Web Crypto needs a secure context — open this page over https or on localhost.';
+      error.textContent = 'Web Crypto needs a secure context. Open this page over https or on localhost.';
     }
   };
   input.addEventListener('input', run);
@@ -125,7 +125,7 @@ function passwordMount(body) {
 }
 
 export default [
-  { id: 'hash-sha', category: 'Crypto', name: 'SHA Hash', title: 'SHA Hashing', desc: 'Compute a SHA-1/256/384/512 digest with the browser\'s Web Crypto API.', mount: hashMount },
+  { id: 'hash-sha', category: 'Crypto', name: 'SHA Hash', title: 'SHA Hash', desc: 'Compute a SHA-1/256/384/512 digest with the browser\'s Web Crypto API.', mount: hashMount },
   { id: 'uuid-v4', category: 'Crypto', name: 'UUID v4', title: 'UUID v4 Generator', desc: 'Generate cryptographically-random version-4 UUIDs.', mount: uuidMount },
   { id: 'pw-gen', category: 'Crypto', name: 'Password', title: 'Password Generator', desc: 'Generate strong random passwords with the Web Crypto API. Pick length and character sets.', mount: passwordMount },
 ];

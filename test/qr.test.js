@@ -149,7 +149,7 @@ test('SVG output covers every dark module inside a quiet zone', () => {
   assert.equal(drawnRects, darkModules, 'one path segment per dark module');
 });
 
-test('custom colours reach the SVG', () => {
+test('custom colors reach the SVG', () => {
   const svg = qrToSvg(encodeQr('HI', { level: 'L' }), { dark: '#123456', light: '#fedcba' });
   assert.ok(svg.includes('fill="#123456"'));
   assert.ok(svg.includes('fill="#fedcba"'));

@@ -37,7 +37,7 @@ export default [
   { id: 'cipher-caesar', category: 'Cipher', name: 'Caesar', title: 'Caesar Cipher', desc: 'Shift each letter by a fixed amount. Use a negative shift to decode.', mount: caesarMount },
   {
     id: 'cipher-rot13', category: 'Cipher', name: 'ROT13', title: 'ROT13',
-    desc: 'Rotate letters by 13 — its own inverse, so the same action encodes and decodes.',
+    desc: 'Rotate letters by 13. Run it again to decode.',
     mount: transformTool({ live: true, placeholder: 'Hello, World', transform: (s) => shift(s, 13) }),
   },
 ];

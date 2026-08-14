@@ -89,7 +89,7 @@ export default [
       placeholder: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.sig',
       transform: (s) => {
         const parts = s.trim().split('.');
-        if (parts.length < 2) throw new Error('Not a JWT — expected at least two dot-separated segments.');
+        if (parts.length < 2) throw new Error('Not a JWT. Expected at least two dot-separated segments.');
         const header = decodeJwtSegment(parts[0], 'header');
         const payload = decodeJwtSegment(parts[1], 'payload');
         let out = 'HEADER\n' + JSON.stringify(header, null, 2) + '\n\nPAYLOAD\n' + JSON.stringify(payload, null, 2);

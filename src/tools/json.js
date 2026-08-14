@@ -196,7 +196,7 @@ function prettifyMount(body) {
   const error = h('div', { class: 'io-error' });
   const tree = h('div', { class: 'json-tree' });
   const foldNote = h('p', { class: 'tool-hint', hidden: true },
-    'Large document — branches start folded and build as you open them. "Expand all" will still render everything.');
+    'Large document, so branches start folded and build as you open them. Expand all still renders everything.');
   let pretty = '';
 
   const panel = () => body.closest('.tool-panel');

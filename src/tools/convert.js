@@ -61,7 +61,7 @@ function timestampMount(body) {
 
   body.append(
     h('div', { class: 'io-box' },
-      h('div', { class: 'io-label' }, 'Timestamp or date string'),
+      h('div', { class: 'io-label' }, 'Timestamp or date'),
       h('div', { class: 'color-input-row' }, tsField, nowBtn),
       error,
     ),
@@ -126,7 +126,7 @@ function baseMount(body) {
     wrap.append(h('div', { class: 'color-out-row' }, h('span', { class: 'part-label' }, label), field, copyBtn(() => field.value)));
   }
 
-  body.append(h('p', { class: 'tool-hint' }, 'Type a number in any base — the others update instantly. Negatives and arbitrarily large values are fine.'), wrap);
+  body.append(h('p', { class: 'tool-hint' }, 'Type a number in any base and the others update. Negatives and very large values are fine.'), wrap);
   fields[10].focus();
 }
 
@@ -189,7 +189,7 @@ function jsonToCsv(text, delimiter) {
   const records = Array.isArray(parsed) ? parsed : [parsed];
   if (!records.length) return '';
   if (records.some((record) => record === null || typeof record !== 'object' || Array.isArray(record))) {
-    throw new Error('Expected an array of objects — each row needs named fields.');
+    throw new Error('Expected an array of objects. Each row needs named fields.');
   }
   const headers = [...new Set(records.flatMap(Object.keys))];
   const cell = (value) => {
@@ -318,7 +318,7 @@ export default [
   { id: 'time-unix', category: 'Convert', name: 'Timestamp', title: 'Unix Timestamp Converter', desc: 'Convert between Unix timestamps and human-readable dates, both ways.', mount: timestampMount },
   {
     id: 'unit-convert', category: 'Convert', name: 'Units', title: 'Unit Converter',
-    desc: 'Convert length, mass, temperature, data, speed and more — every unit in the category at once.',
+    desc: 'Convert length, mass, temperature, data, speed and more. Shows every unit at once.',
     mount: unitMount,
   },
   { id: 'num-base', category: 'Convert', name: 'Number Base', title: 'Number Base Converter', desc: 'Convert integers between decimal, hex, octal and binary (arbitrary precision).', mount: baseMount },

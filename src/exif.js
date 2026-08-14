@@ -46,7 +46,7 @@ const ENUMS = {
     4: 'Shutter priority', 5: 'Creative', 6: 'Action', 7: 'Portrait', 8: 'Landscape',
   },
   'Metering Mode': {
-    0: 'Unknown', 1: 'Average', 2: 'Centre-weighted', 3: 'Spot', 4: 'Multi-spot',
+    0: 'Unknown', 1: 'Average', 2: 'Center-weighted', 3: 'Spot', 4: 'Multi-spot',
     5: 'Pattern', 6: 'Partial', 255: 'Other',
   },
   'Light Source': { 0: 'Unknown', 1: 'Daylight', 2: 'Fluorescent', 3: 'Tungsten', 4: 'Flash', 9: 'Fine weather', 10: 'Cloudy', 11: 'Shade' },
@@ -130,7 +130,7 @@ function formatFlash(bits) {
 }
 
 // EXIF writes timestamps as "2026:08:13 10:30:00"; only the date half uses colons.
-const normaliseDate = (text) => text.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3');
+const normalizeDate = (text) => text.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3');
 
 const DATE_TAGS = new Set(['Taken', 'Digitised', 'Modified', 'Date']);
 
@@ -161,7 +161,7 @@ function formatTag(name, value, type) {
   if (name === 'Exif Version' || name === 'FlashPix Version') {
     return Array.isArray(value) ? String.fromCharCode(...value) : String(value);
   }
-  if (DATE_TAGS.has(name) && typeof value === 'string') return normaliseDate(value);
+  if (DATE_TAGS.has(name) && typeof value === 'string') return normalizeDate(value);
   if (Array.isArray(value)) return value.join(', ');
   return String(value);
 }
