@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-29",
+  "fetchedAt": "2026-08-17",
   "sources": [
     "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
     "https://models.dev/api.json"
