@@ -1,3 +1,3 @@
 # webTools
 
-'Cause I wanted to have my own dev tools with some little add-ons.
+I could've bookmarked a dozen dev-tool sites like a normal person. Instead I rebuilt them all, minus the ads, the cookie banners, and the part where your API keys go on a field trip.
