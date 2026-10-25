@@ -21,7 +21,15 @@ export const tools = [
 ];
 
 // Preserve first-seen category order.
-export const categories = tools.reduce((acc, t) => {
-  (acc[t.category] ??= []).push(t);
-  return acc;
+export const categories = tools.reduce((byCategory, tool) => {
+  (byCategory[tool.category] ??= []).push(tool);
+  return byCategory;
 }, {});
+
+// A Map rather than a plain object: ids arrive from the URL, and an object
+// would happily return Object.prototype for "#__proto__" or a function for
+// "#constructor".
+const toolsById = new Map(tools.map((tool) => [tool.id, tool]));
+
+/** The tool with this id, or undefined. */
+export const findTool = (id) => toolsById.get(id);

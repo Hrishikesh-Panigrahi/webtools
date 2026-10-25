@@ -38,11 +38,12 @@ Use these rather than inventing values, or the surface stops matching itself.
   matte behind a JPEG. Those must be real colors and must not follow the theme.
 
 ## Structure
-- Build DOM with the `h` helper from `dom.js`; don't hand-write `innerHTML` for structure.
+- Build DOM with the `h` helper from `ui/dom.js`; don't hand-write `innerHTML` for structure.
 - Reuse existing classes and components before inventing new ones: `io-box`, `io-textarea`,
   `btn` / `btn-primary` / `btn-ghost`, `part-input`, `param-row`, `color-out-row`, `stat`,
   `dropzone`, `kv-list`.
-- Use `panel.js` layouts for standard shapes: `transformTool` and `ioBox` for input→output,
+- Use `ui/panel.js` layouts for standard shapes: `transformTool` for input→output (code
+  input goes in a `codeEditor` with an `inputHeader` above it),
   `filePicker` for tools that read a binary file.
 
 ## Hiding things

@@ -11,9 +11,12 @@ it does. Follow these rules for every change in this repo.
 ## Modularity
 - One tool is one small object (`id`, `category`, `name`, `title`, `desc`, `mount`) in a
   module under `src/tools/`. Register it in `src/registry.js`. Nothing else needs editing.
-- Reach for existing helpers before writing new code: `transformTool` / `ioBox` /
-  `filePicker` from `panel.js`, `h` / `copyBtn` / `icons` from `dom.js`, and
-  `formatBytes` / `formatDelta` from `format.js`.
+- Reach for existing helpers before writing new code: `transformTool` / `inputHeader` /
+  `runOnInput` / `filePicker` from `ui/panel.js`, `codeEditor` from `ui/editor.js`, `h` from
+  `ui/dom.js`, `copyButton` and friends from `ui/buttons.js`, `icons` from `ui/icons.js`,
+  and `formatBytes` / `formatDelta` from `lib/format.js`.
+- Respect the layers: `lib/` (pure) ← `ui/` (widgets) ← `tools/` ← `shell/`. A module
+  never imports from a layer below it.
 - Keep functions small and single-purpose. If a function does two things, split it.
 - Keep pure logic (a transform, a parse, a format) in its own module at the `src/` root,
   separate from DOM wiring. A tool module builds UI; it does not implement an algorithm.

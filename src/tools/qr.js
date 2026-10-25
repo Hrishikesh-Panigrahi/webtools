@@ -1,6 +1,7 @@
-import { h, copyBtn } from '../dom.js';
-import { keyValueRow } from '../panel.js';
-import { encodeQr, qrToSvg, qrToCanvas } from '../qr.js';
+import { h } from '../ui/dom.js';
+import { copyButton } from '../ui/buttons.js';
+import { keyValueRow } from '../ui/panel.js';
+import { encodeQr, qrToSvg, qrToCanvas } from '../lib/qr.js';
 
 const LEVELS = [
   ['L', 'L — recovers ~7%'],
@@ -98,7 +99,7 @@ function qrMount(body) {
       class: 'btn', type: 'button',
       onClick: () => matrix && download(new Blob([svgText()], { type: 'image/svg+xml' }), 'qr-code.svg'),
     }, 'Download SVG'),
-    copyBtn(svgText),
+    copyButton(svgText),
   );
 
   template.addEventListener('change', () => {
@@ -138,6 +139,7 @@ function qrMount(body) {
 export default [
   {
     id: 'qr-generate', category: 'Generate', name: 'QR Code', title: 'QR Code Generator',
+    keywords: 'barcode wifi vcard',
     desc: 'Make a QR code from text, a URL, WiFi credentials or a contact card. Downloads as PNG or SVG.',
     mount: qrMount,
   },

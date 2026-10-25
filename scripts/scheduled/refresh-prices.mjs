@@ -10,9 +10,9 @@
 import { execFileSync } from 'node:child_process';
 
 const BRANCH = 'chore/refresh-model-prices';
-const PRICE_FILE = 'src/prices.json';
+const PRICE_FILE = 'src/lib/prices.json';
 const COMMIT_MESSAGE = 'Refresh model price table';
-const PR_BODY = 'Automated refresh of `src/prices.json`. Both upstream feeds agreed on every value. Review the diff before merging.';
+const PR_BODY = 'Automated refresh of `src/lib/prices.json`. Both upstream feeds agreed on every value. Review the diff before merging.';
 
 // The bot identity GitHub attributes Actions commits to.
 const BOT_NAME = 'github-actions[bot]';

@@ -1,7 +1,8 @@
-import { h, copyBtn } from '../dom.js';
-import { filePicker } from '../panel.js';
-import { inspectImage, stripImageMetadata, detectFormat } from '../imagefile.js';
-import { formatBytes, formatDelta } from '../format.js';
+import { h } from '../ui/dom.js';
+import { copyButton } from '../ui/buttons.js';
+import { filePicker } from '../ui/panel.js';
+import { inspectImage, stripImageMetadata, detectFormat } from '../lib/imagefile.js';
+import { formatBytes, formatDelta } from '../lib/format.js';
 
 const readArrayBuffer = (file) => file.arrayBuffer();
 
@@ -58,7 +59,7 @@ function locationCard(location) {
   return h('div', { class: 'io-box gps-card' },
     h('div', { class: 'io-label-row' },
       h('span', { class: 'io-label' }, 'Location'),
-      copyBtn(() => location.decimal),
+      copyButton(() => location.decimal),
     ),
     h('div', { class: 'kv-list' }, ...fields.map(([name, value]) => tagRow(name, value))),
     h('a', { class: 'gps-link', href: location.mapUrl, target: '_blank', rel: 'noopener noreferrer' }, 'Open in OpenStreetMap ↗'),
@@ -108,7 +109,7 @@ function exifMount(body) {
     }
     results.append(grid, h('div', { class: 'tool-actions' },
       h('span', { class: 'kbd-hint' }, 'All tags as JSON'),
-      copyBtn(asJson),
+      copyButton(asJson),
     ));
   };
 
@@ -349,16 +350,19 @@ function converterMount(body) {
 export default [
   {
     id: 'image-exif', category: 'Image', name: 'EXIF Viewer', title: 'Image Metadata Viewer',
+    keywords: 'photo gps camera xmp metadata',
     desc: 'See the EXIF, GPS and XMP metadata stored in a photo.',
     mount: exifMount,
   },
   {
     id: 'image-clean', category: 'Image', name: 'Metadata Cleaner', title: 'Image Metadata Cleaner',
+    keywords: 'strip exif gps privacy remove',
     desc: 'Remove EXIF, GPS and other metadata from a photo, without re-encoding it.',
     mount: cleanerMount,
   },
   {
     id: 'image-convert', category: 'Image', name: 'Format Converter', title: 'Image Format Converter',
+    keywords: 'png jpeg webp resize compress',
     desc: 'Convert between PNG, JPEG and WebP. Resize and set quality if you need to.',
     mount: converterMount,
   },

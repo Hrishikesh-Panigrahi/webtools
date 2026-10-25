@@ -1,4 +1,8 @@
-import { h, copyBtn } from '../dom.js';
+import { h } from '../ui/dom.js';
+import { copyButton } from '../ui/buttons.js';
+import { inputHeader, runOnInput } from '../ui/panel.js';
+import { codeEditor } from '../ui/editor.js';
+import { escapeHtml, isSafeUrl } from '../lib/security.js';
 
 // A deliberately small, safe Markdown -> HTML converter.
 //
@@ -7,10 +11,6 @@ import { h, copyBtn } from '../dom.js';
 // markup. Only a fixed set of tags is produced, and link URLs are scheme-checked
 // so `javascript:` and friends are dropped. Code (fenced blocks handled in the
 // block loop, inline spans split out below) is escaped and never interpreted.
-
-const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-const SAFE_URL = /^(https?:|mailto:|#|\/|\.)/i;
 
 // Code spans and links are pulled out before emphasis runs, so a URL holding
 // `_` or `*` (very common) is never mistaken for emphasis markers.
@@ -23,7 +23,7 @@ const emphasis = (text) => text
   .replace(/_([^_]+)_/g, '<em>$1</em>');
 
 function link(label, url) {
-  if (!SAFE_URL.test(url)) return escapeHtml(`[${label}](${url})`);
+  if (!isSafeUrl(url)) return escapeHtml(`[${label}](${url})`);
   return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${emphasis(escapeHtml(label))}</a>`;
 }
 
@@ -91,7 +91,8 @@ function mdToHtml(src) {
 }
 
 function markdownMount(body) {
-  const input = h('textarea', { class: 'io-textarea', placeholder: '# Hello\n\nSome **bold** text with a [link](https://example.com) and `code`.', spellcheck: 'false' });
+  const input = h('textarea', { class: 'io-textarea', placeholder: '# Hello\n\nSome **bold** text with a [link](https://example.com) and `code`.\n\n- one\n- two', spellcheck: 'false' });
+  const editor = codeEditor(input, { wrap: true });
   const preview = h('div', { class: 'md-preview' });
   let html = '';
 
@@ -99,15 +100,15 @@ function markdownMount(body) {
     html = mdToHtml(input.value);
     preview.innerHTML = html;
   };
-  input.addEventListener('input', render);
+  runOnInput([input], render);
 
   body.append(
     h('div', { class: 'io-grid json-split' },
-      h('div', { class: 'io-box' }, h('div', { class: 'io-label' }, 'Markdown'), input),
+      h('div', { class: 'io-box' }, inputHeader('Markdown', input), editor.root),
       h('div', { class: 'io-box' },
         h('div', { class: 'io-label-row' },
           h('span', { class: 'io-label' }, 'Preview'),
-          copyBtn(() => html),
+          copyButton(() => html),
         ),
         preview,
       ),
@@ -119,5 +120,5 @@ function markdownMount(body) {
 }
 
 export default [
-  { id: 'md-preview', category: 'Text', name: 'Markdown', title: 'Markdown Preview', desc: 'Live preview of common Markdown, with the generated HTML one click away. Raw HTML is escaped and link URLs are sanitized.', mount: markdownMount },
+  { id: 'md-preview', category: 'Text', name: 'Markdown', title: 'Markdown Preview', keywords: 'md render html readme', desc: 'Live preview of common Markdown, with the generated HTML one click away. Raw HTML is escaped and link URLs are sanitized.', mount: markdownMount },
 ];

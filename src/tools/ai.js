@@ -1,6 +1,8 @@
-import { h, copyBtn } from '../dom.js';
-import { keyValueRow } from '../panel.js';
-import { estimateTokens, MODELS, TOKEN_CLASSES, PRICES_AS_OF } from '../tokens.js';
+import { h } from '../ui/dom.js';
+import { copyButton } from '../ui/buttons.js';
+import { keyValueRow, runOnInput } from '../ui/panel.js';
+import { estimateTokens, TOKEN_CLASSES } from '../lib/tokens.js';
+import { MODELS, PRICES_AS_OF } from '../lib/models.js';
 
 // Sub-cent figures need real precision to be useful; dollar figures don't.
 function money(amount) {
@@ -90,7 +92,7 @@ function tokenMount(body) {
     ].join('\n');
   };
 
-  input.addEventListener('input', run);
+  runOnInput([input], run);
   model.addEventListener('change', run);
   expected.addEventListener('input', run);
 
@@ -112,7 +114,7 @@ function tokenMount(body) {
       h('div', { class: 'io-box' },
         h('div', { class: 'io-label-row' },
           h('span', { class: 'io-label' }, 'Estimated cost (USD)'),
-          copyBtn(() => summary),
+          copyButton(() => summary),
         ),
         costBlock,
         priceNote,
@@ -132,6 +134,7 @@ function tokenMount(body) {
 export default [
   {
     id: 'ai-tokens', category: 'AI', name: 'Token Predictor', title: 'LLM Token Predictor',
+    keywords: 'llm tokens cost price context claude gpt prompt',
     desc: 'Estimate how many tokens a prompt uses, what it costs on each Claude model, and how much of the context window it fills.',
     mount: tokenMount,
   },

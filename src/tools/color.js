@@ -1,4 +1,6 @@
-import { h, copyBtn, icons } from '../dom.js';
+import { h } from '../ui/dom.js';
+import { icons } from '../ui/icons.js';
+import { copyButton } from '../ui/buttons.js';
 
 function parseColor(str) {
   str = str.trim();
@@ -58,9 +60,9 @@ function colorMount(body) {
   const rows = {};
   const outWrap = h('div', { class: 'color-outputs' });
   for (const key of ['HEX', 'RGB', 'HSL']) {
-    const val = h('input', { class: 'part-input', readonly: true, spellcheck: 'false' });
-    rows[key] = val;
-    outWrap.append(h('div', { class: 'color-out-row' }, h('span', { class: 'part-label' }, key), val, copyBtn(() => val.value)));
+    const readout = h('input', { class: 'part-input', readonly: true, spellcheck: 'false' });
+    rows[key] = readout;
+    outWrap.append(h('div', { class: 'color-out-row' }, h('span', { class: 'part-label' }, key), readout, copyButton(() => readout.value)));
   }
 
   const run = (src) => {
@@ -184,7 +186,7 @@ function gradientMount(body) {
       stopList,
     ),
     h('div', { class: 'io-box' },
-      h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'CSS'), copyBtn(() => output.value)),
+      h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'CSS'), copyButton(() => output.value)),
       output,
     ),
   );
@@ -192,9 +194,10 @@ function gradientMount(body) {
 }
 
 export default [
-  { id: 'color-convert', category: 'Color', name: 'Converter', title: 'Color Converter', desc: 'Convert between HEX, RGB and HSL, with a live swatch and picker.', mount: colorMount },
+  { id: 'color-convert', category: 'Color', name: 'Converter', title: 'Color Converter', keywords: 'hex rgb hsl picker colour', desc: 'Convert between HEX, RGB and HSL, with a live swatch and picker.', mount: colorMount },
   {
     id: 'color-gradient', category: 'Color', name: 'Gradient', title: 'CSS Gradient Generator',
+    keywords: 'linear radial conic background css',
     desc: 'Build a linear, radial or conic gradient and copy the CSS.',
     mount: gradientMount,
   },

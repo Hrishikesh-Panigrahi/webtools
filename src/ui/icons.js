@@ -1,29 +1,5 @@
-// Tiny DOM helpers — no framework, just ergonomics.
-
-/**
- * Create an element.
- * @param {string} tag
- * @param {Object} [attrs]  class, html, on<Event> handlers, or plain attributes
- * @param {...(Node|string|Array)} kids
- */
-export function h(tag, attrs = {}, ...kids) {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (v == null || v === false) continue;
-    if (k === 'class') e.className = v;
-    else if (k === 'html') e.innerHTML = v;
-    else if (k === 'value') e.value = v;
-    else if (k.startsWith('on') && typeof v === 'function') {
-      e.addEventListener(k.slice(2).toLowerCase(), v);
-    } else if (v === true) e.setAttribute(k, '');
-    else e.setAttribute(k, v);
-  }
-  for (const kid of kids.flat()) {
-    if (kid == null || kid === false) continue;
-    e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
-  }
-  return e;
-}
+// Inline SVG icons. Every string here is a constant written in this file, so
+// it is safe to assign through innerHTML; nothing user-supplied ever is.
 
 export const icons = {
   copy: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
@@ -35,6 +11,18 @@ export const icons = {
   link: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
   swap: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`,
   search: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+  star: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2.5 15 8.7 21.8 9.6 16.9 14.3 18.1 21 12 17.8 5.9 21 7.1 14.3 2.2 9.6 9 8.7"/></svg>`,
+  reset: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg>`,
+  sample: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/></svg>`,
+  alert: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  wand: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>`,
+  clock: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>`,
+  command: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
+  sun: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/></svg>`,
+  moon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>`,
+  menu: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`,
+  logo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 8 9 12 5 16"/><line x1="12.5" y1="16" x2="19" y2="16"/></svg>`,
+  grid: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`,
 };
 
 /** One glyph per sidebar category, so a 43-item list can be scanned by shape. */
@@ -56,81 +44,3 @@ export const categoryIcons = {
   Crypto: categoryIcon('<path d="M12 2l8 3.5v5.5c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5.5z"/><path d="M9.5 12.2l1.9 1.9 3.6-3.8"/>'),
   Cipher: categoryIcon('<rect x="4" y="10.5" width="16" height="10.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>'),
 };
-
-/** A "Copy" button wired to copy the string returned by getText(). */
-export function copyBtn(getText) {
-  const btn = h('button', { class: 'btn-copy', type: 'button', html: icons.copy + ' Copy' });
-  btn.addEventListener('click', async () => {
-    const text = getText();
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Fallback for insecure contexts
-      const ta = h('textarea', { value: text });
-      document.body.append(ta);
-      ta.select();
-      document.execCommand('copy');
-      ta.remove();
-    }
-    btn.innerHTML = icons.check + ' Copied';
-    btn.classList.add('copied');
-    clearTimeout(btn._t);
-    btn._t = setTimeout(() => {
-      btn.innerHTML = icons.copy + ' Copy';
-      btn.classList.remove('copied');
-    }, 1200);
-  });
-  return btn;
-}
-
-/** A "Paste" button that reads the clipboard and hands the text to `onText`. */
-export function pasteBtn(onText) {
-  const btn = h('button', { class: 'btn-copy', type: 'button', html: icons.paste + ' Paste', title: 'Paste from clipboard' });
-  btn.addEventListener('click', async () => {
-    let text;
-    try {
-      text = await navigator.clipboard.readText();
-    } catch {
-      return; // clipboard read blocked (insecure context / denied) — nothing to do
-    }
-    if (text) onText(text);
-  });
-  return btn;
-}
-
-/** A "Download" button that saves getText() to a file named by getName(). */
-export function downloadBtn(getName, getText) {
-  const btn = h('button', { class: 'btn-copy', type: 'button', html: icons.download + ' Download', title: 'Download output' });
-  btn.addEventListener('click', () => {
-    const text = getText();
-    if (!text) return;
-    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-    const a = h('a', { href: url, download: getName() });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  });
-  return btn;
-}
-
-/**
- * Empty a field the way a keystroke would, so live tools re-run and the shell's
- * saved-input state clears too. Assigning `.value` alone fires no event, which
- * left the old text in localStorage and brought it back on the next visit.
- */
-export function clearField(el) {
-  el.value = '';
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-}
-
-/** Run `fn` when Cmd/Ctrl+Enter is pressed inside `el`. */
-export function onRunKey(el, fn) {
-  el.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault();
-      fn();
-    }
-  });
-}

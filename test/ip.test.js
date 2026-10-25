@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   describeAddress, splitSubnets, parseIpv4, formatIpv4, parseIpv6, formatIpv6, formatIpv6Full,
-} from '../src/ip.js';
+} from '../src/lib/ip.js';
 
 /** Look one labelled row out of a description. */
 const field = (input, label) => {

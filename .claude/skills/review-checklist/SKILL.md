@@ -25,7 +25,7 @@ Walk the diff against this list. Flag anything that fails; don't rubber-stamp.
 ## Code quality (see the `clean-code` skill)
 - Names are full and descriptive; functions are verbs, values are nouns.
 - Comments are minimal and explain *why*, not *what*.
-- Existing helpers (`transformTool`, `ioBox`, `filePicker`, `h`, `copyBtn`, `formatBytes`)
+- Existing helpers (`transformTool`, `codeEditor`, `filePicker`, `h`, `copyButton`, `formatBytes`)
   are reused instead of reinvented.
 - No dead code, leftover `console.log`, unused variables, or unused exports.
 
@@ -53,5 +53,11 @@ Each of these shipped once. Check the diff for them.
   `JSON.parse` message, and don't echo the whole input back.
 
 ## Safety
-- The tool is fully client-side — no network calls, nothing leaves the browser.
-- Anything rendered through `innerHTML` escapes the user's input.
+- The tool is fully client-side — no network calls, nothing leaves the browser. The
+  build's CSP blocks them anyway; a change that needs to loosen `vite.config.js` is
+  a change to question.
+- Anything rendered through `innerHTML` escapes the user's input with `escapeHtml`, and
+  any user-supplied link passes `isSafeUrl` (both in `lib/security.js`).
+- Ids and state from the URL are untrusted: look tools up with `findTool`, and let
+  `decodeState` / `applyState` validate values rather than writing them raw.
+- A tool whose input is usually a credential sets `sensitive: true`.

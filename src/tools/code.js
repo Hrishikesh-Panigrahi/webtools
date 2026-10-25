@@ -1,6 +1,8 @@
-import { h, copyBtn } from '../dom.js';
-import { transformTool, keyValueRow } from '../panel.js';
-import { parseCron, describeCron, daysAreEitherOr, nextRuns, HORIZON_YEARS } from '../cron.js';
+import { h } from '../ui/dom.js';
+import { copyButton } from '../ui/buttons.js';
+import { transformTool, keyValueRow } from '../ui/panel.js';
+import { parseJson, repairJson } from '../lib/json.js';
+import { parseCron, describeCron, daysAreEitherOr, nextRuns, HORIZON_YEARS } from '../lib/cron.js';
 
 // --- cURL -> fetch ---
 
@@ -214,7 +216,7 @@ function unionType(values, name, interfaces) {
 }
 
 function jsonToTypes(source) {
-  const value = JSON.parse(source);
+  const value = parseJson(source);
   const interfaces = createInterfaces();
 
   if (isPlainObject(value)) {
@@ -271,7 +273,7 @@ function cronMount(body) {
   body.append(
     h('p', { class: 'tool-hint' }, 'Five fields: minute, hour, day-of-month, month, day-of-week. Names (mon, jan), ranges, steps and @daily-style shorthands all work.'),
     h('div', { class: 'io-box' },
-      h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Expression'), copyBtn(() => field.value)),
+      h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Expression'), copyButton(() => field.value)),
       field,
       error,
     ),
@@ -284,24 +286,28 @@ function cronMount(body) {
 export default [
   {
     id: 'curl-fetch', category: 'Code', name: 'cURL → fetch', title: 'cURL to fetch()',
+    keywords: 'http request javascript convert',
     desc: 'Turn a copied cURL command into a fetch() call, headers and body included.',
     mount: transformTool({
-      live: true, inputLabel: 'cURL command', outputLabel: 'JavaScript', downloadName: 'request.js',
+      inputLabel: 'cURL command', outputLabel: 'JavaScript', downloadName: 'request.js', wrapOutput: false,
       placeholder: 'curl -X POST https://api.example.com/users \\\n  -H \'content-type: application/json\' \\\n  -d \'{"name":"Ada"}\'',
       transform: curlToFetch,
     }),
   },
   {
     id: 'json-types', category: 'Code', name: 'JSON → TypeScript', title: 'JSON to TypeScript',
+    keywords: 'interface type definition ts generate',
     desc: 'Generate interfaces from a JSON sample. Array elements are merged into one shape, and keys missing from some elements become optional.',
     mount: transformTool({
-      live: true, inputLabel: 'JSON', outputLabel: 'TypeScript', downloadName: 'types.ts',
+      inputLabel: 'JSON', outputLabel: 'TypeScript', downloadName: 'types.ts',
+      wrapInput: false, wrapOutput: false, repair: repairJson,
       placeholder: '{"id":1,"name":"Ada","tags":["admin"],"team":{"slug":"core"}}',
       transform: jsonToTypes,
     }),
   },
   {
     id: 'cron-explain', category: 'Code', name: 'Cron Expression', title: 'Cron Expression Explainer',
+    keywords: 'schedule crontab job timer',
     desc: 'Read a cron schedule back in plain English, and see when it fires next.',
     mount: cronMount,
   },

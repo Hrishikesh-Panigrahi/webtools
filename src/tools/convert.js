@@ -1,6 +1,8 @@
-import { h, copyBtn } from '../dom.js';
-import { toggleRow } from '../panel.js';
-import { unitCategories, unitsIn, convertAll, formatQuantity } from '../units.js';
+import { h } from '../ui/dom.js';
+import { copyButton } from '../ui/buttons.js';
+import { toggleRow, inputHeader } from '../ui/panel.js';
+import { codeEditor } from '../ui/editor.js';
+import { unitCategories, unitsIn, convertAll, formatQuantity } from '../lib/units.js';
 
 // --- Unix timestamp <-> human date ---
 
@@ -21,25 +23,25 @@ function timestampMount(body) {
   const out = h('div', { class: 'color-outputs' });
   const rows = {};
   for (const key of ['ISO 8601 (UTC)', 'Local', 'Relative', 'Unix (s)', 'Unix (ms)']) {
-    const val = h('input', { class: 'part-input', readonly: true, spellcheck: 'false' });
-    rows[key] = val;
-    out.append(h('div', { class: 'color-out-row' }, h('span', { class: 'part-label' }, key), val, copyBtn(() => val.value)));
+    const readout = h('input', { class: 'part-input', readonly: true, spellcheck: 'false' });
+    rows[key] = readout;
+    out.append(h('div', { class: 'color-out-row' }, h('span', { class: 'part-label' }, key), readout, copyButton(() => readout.value)));
   }
 
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-  const rel = (d) => {
-    const s = (d.getTime() - Date.now()) / 1000;
-    const abs = Math.abs(s);
+  const relativeTime = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+  const describeRelative = (date) => {
+    const seconds = (date.getTime() - Date.now()) / 1000;
     const units = [['year', 31536000], ['day', 86400], ['hour', 3600], ['minute', 60], ['second', 1]];
-    for (const [u, sec] of units) if (abs >= sec || u === 'second') return rtf.format(Math.round(s / sec), u);
+    const [unit, unitSeconds] = units.find(([, length]) => Math.abs(seconds) >= length) ?? units.at(-1);
+    return relativeTime.format(Math.round(seconds / unitSeconds), unit);
   };
 
-  const render = (d) => {
-    rows['ISO 8601 (UTC)'].value = d.toISOString();
-    rows['Local'].value = d.toString();
-    rows['Relative'].value = rel(d);
-    rows['Unix (s)'].value = Math.floor(d.getTime() / 1000);
-    rows['Unix (ms)'].value = d.getTime();
+  const render = (date) => {
+    rows['ISO 8601 (UTC)'].value = date.toISOString();
+    rows['Local'].value = date.toString();
+    rows['Relative'].value = describeRelative(date);
+    rows['Unix (s)'].value = Math.floor(date.getTime() / 1000);
+    rows['Unix (ms)'].value = date.getTime();
   };
   const blank = () => { for (const key in rows) rows[key].value = ''; };
 
@@ -123,7 +125,7 @@ function baseMount(body) {
     const field = h('input', { class: 'part-input', spellcheck: 'false', placeholder: PLACEHOLDERS[base] });
     fields[base] = field;
     field.addEventListener('input', () => update(base, field.value));
-    wrap.append(h('div', { class: 'color-out-row' }, h('span', { class: 'part-label' }, label), field, copyBtn(() => field.value)));
+    wrap.append(h('div', { class: 'color-out-row' }, h('span', { class: 'part-label' }, label), field, copyButton(() => field.value)));
   }
 
   body.append(h('p', { class: 'tool-hint' }, 'Type a number in any base and the others update. Negatives and very large values are fine.'), wrap);
@@ -209,8 +211,10 @@ function csvMount(body) {
     ...[CSV_TO_JSON, 'JSON → CSV'].map((label) => h('option', {}, label)));
   const delimiter = h('select', { class: 'select' }, ...Object.keys(DELIMITERS).map((label) => h('option', {}, label)));
   const { row: options, boxes } = toggleRow([TYPED]);
-  const input = h('textarea', { class: 'io-textarea tall', spellcheck: 'false' });
+  const input = h('textarea', { class: 'io-textarea tall', spellcheck: 'false', placeholder: 'name,role\nAda,engineer' });
   const output = h('textarea', { class: 'io-textarea tall', readonly: true, spellcheck: 'false' });
+  const inputEditor = codeEditor(input);
+  const outputEditor = codeEditor(output);
   const error = h('div', { class: 'io-error' });
   const inputLabel = h('span', { class: 'io-label' }, 'CSV');
   const outputLabel = h('span', { class: 'io-label' }, 'JSON');
@@ -245,10 +249,10 @@ function csvMount(body) {
       options,
     ),
     h('div', { class: 'io-grid' },
-      h('div', { class: 'io-box' }, h('div', { class: 'io-label-row' }, inputLabel), input, error),
+      h('div', { class: 'io-box' }, inputHeader(inputLabel, input), inputEditor.root, error),
       h('div', { class: 'io-box' },
-        h('div', { class: 'io-label-row' }, outputLabel, copyBtn(() => output.value)),
-        output,
+        h('div', { class: 'io-label-row' }, outputLabel, copyButton(() => output.value)),
+        outputEditor.root,
       ),
     ),
   );
@@ -295,7 +299,7 @@ function unitMount(body) {
       results.append(h('div', { class: 'color-out-row' },
         h('span', { class: 'part-label' }, `${unit.name} (${unit.symbol})`),
         field,
-        copyBtn(() => field.value),
+        copyButton(() => field.value),
       ));
     }
   };
@@ -315,15 +319,17 @@ function unitMount(body) {
 }
 
 export default [
-  { id: 'time-unix', category: 'Convert', name: 'Timestamp', title: 'Unix Timestamp Converter', desc: 'Convert between Unix timestamps and human-readable dates, both ways.', mount: timestampMount },
+  { id: 'time-unix', category: 'Convert', name: 'Timestamp', title: 'Unix Timestamp Converter', keywords: 'epoch date time iso 8601 utc', desc: 'Convert between Unix timestamps and human-readable dates, both ways.', mount: timestampMount },
   {
     id: 'unit-convert', category: 'Convert', name: 'Units', title: 'Unit Converter',
+    keywords: 'length weight temperature bytes speed measure',
     desc: 'Convert length, mass, temperature, data, speed and more. Shows every unit at once.',
     mount: unitMount,
   },
-  { id: 'num-base', category: 'Convert', name: 'Number Base', title: 'Number Base Converter', desc: 'Convert integers between decimal, hex, octal and binary (arbitrary precision).', mount: baseMount },
+  { id: 'num-base', category: 'Convert', name: 'Number Base', title: 'Number Base Converter', keywords: 'hex binary octal decimal radix', desc: 'Convert integers between decimal, hex, octal and binary (arbitrary precision).', mount: baseMount },
   {
     id: 'csv-json', category: 'Convert', name: 'CSV ⇄ JSON', title: 'CSV ⇄ JSON Converter',
+    keywords: 'spreadsheet table tsv excel',
     desc: 'Turn a spreadsheet export into JSON records, or JSON back into CSV. Quoted fields, embedded newlines and custom delimiters all work.',
     mount: csvMount,
   },

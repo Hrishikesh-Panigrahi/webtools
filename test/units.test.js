@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { unitCategories, unitsIn, convertAll, formatQuantity } from '../src/units.js';
+import { unitCategories, unitsIn, convertAll, formatQuantity } from '../src/lib/units.js';
 
 /** Convert between two units of a category and return the raw number. */
 const convert = (category, value, from, to) => {

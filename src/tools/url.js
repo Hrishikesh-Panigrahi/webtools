@@ -1,4 +1,6 @@
-import { h, copyBtn, icons } from '../dom.js';
+import { h, setField } from '../ui/dom.js';
+import { icons } from '../ui/icons.js';
+import { copyButton } from '../ui/buttons.js';
 
 // Editable URL parser: break a URL into parts + a query-param table.
 // Edit any field or param and the full URL rebuilds live. Paste a URL and
@@ -28,23 +30,23 @@ function urlParserMount(body) {
   let credentials = '';
 
   const addParamRow = (key = '', value = '') => {
-    const k = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'key', value: key, 'data-no-persist': true });
-    const v = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'value', value: value, 'data-no-persist': true });
-    const del = h('button', { class: 'btn-icon-sm', type: 'button', title: 'Remove', html: icons.trash });
-    const row = h('div', { class: 'param-row' }, k, v, del);
-    k.addEventListener('input', rebuild);
-    v.addEventListener('input', rebuild);
-    del.addEventListener('click', () => { row.remove(); rebuild(); });
+    const keyField = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'key', value: key, 'data-no-persist': true });
+    const valueField = h('input', { class: 'param-input', spellcheck: 'false', placeholder: 'value', value, 'data-no-persist': true });
+    const removeButton = h('button', { class: 'btn-icon-sm', type: 'button', title: 'Remove', 'aria-label': 'Remove this parameter', html: icons.trash });
+    const row = h('div', { class: 'param-row' }, keyField, valueField, removeButton);
+    keyField.addEventListener('input', rebuild);
+    valueField.addEventListener('input', rebuild);
+    removeButton.addEventListener('click', () => { row.remove(); rebuild(); });
     paramRows.append(row);
   };
 
   function collectParams() {
     return [...paramRows.querySelectorAll('.param-row')]
-      .map((r) => {
-        const [k, v] = r.querySelectorAll('.param-input');
-        return { key: k.value, value: v.value };
+      .map((row) => {
+        const [keyField, valueField] = row.querySelectorAll('.param-input');
+        return { key: keyField.value, value: valueField.value };
       })
-      .filter((p) => p.key !== '');
+      .filter((param) => param.key !== '');
   }
 
   // Rebuild the URL string from the structured fields.
@@ -57,7 +59,7 @@ function urlParserMount(body) {
     if (path && !path.startsWith('/')) path = '/' + path;
     const frag = parts.hash.input.value.replace(/^#/, '');
     const query = collectParams()
-      .map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+      .map((param) => `${encodeURIComponent(param.key)}=${encodeURIComponent(param.value)}`)
       .join('&');
 
     urlField.value =
@@ -65,45 +67,51 @@ function urlParserMount(body) {
       `${query ? '?' + query : ''}${frag ? '#' + frag : ''}`;
   }
 
-  // Parse the URL string into the structured fields + param table.
-  function parse() {
+  // Parse the URL string into the structured fields + param table. While
+  // typing (`quiet`), a half-written URL leaves the fields alone instead of
+  // flashing an error; leaving the field or pressing Enter reports it.
+  function parse({ quiet = false } = {}) {
     const raw = urlField.value.trim();
     if (!raw) return;
-    let u;
+    let parsed;
     try {
-      u = new URL(raw);
+      parsed = new URL(raw);
     } catch {
-      error.textContent = 'Invalid URL. Include a protocol, e.g. https://…';
+      if (!quiet) error.textContent = 'Invalid URL. Include a protocol, e.g. https://…';
       return;
     }
     error.textContent = '';
-    credentials = u.username ? `${u.username}${u.password ? ':' + u.password : ''}@` : '';
-    parts.protocol.input.value = u.protocol.replace(/:$/, '');
-    parts.host.input.value = u.hostname;
-    parts.port.input.value = u.port;
-    parts.path.input.value = u.pathname === '/' && !raw.includes(u.host + '/') ? '' : u.pathname;
-    parts.hash.input.value = u.hash.replace(/^#/, '');
-    paramRows.innerHTML = '';
-    for (const [k, v] of u.searchParams) addParamRow(k, v);
+    credentials = parsed.username ? `${parsed.username}${parsed.password ? ':' + parsed.password : ''}@` : '';
+    parts.protocol.input.value = parsed.protocol.replace(/:$/, '');
+    parts.host.input.value = parsed.hostname;
+    parts.port.input.value = parsed.port;
+    parts.path.input.value = parsed.pathname === '/' && !raw.includes(parsed.host + '/') ? '' : parsed.pathname;
+    parts.hash.input.value = parsed.hash.replace(/^#/, '');
+    paramRows.replaceChildren();
+    for (const [key, value] of parsed.searchParams) addParamRow(key, value);
     addParamRow(); // trailing empty row to add a new one
   }
 
-  urlField.addEventListener('change', parse);
-  urlField.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); parse(); } });
+  urlField.addEventListener('input', () => { error.textContent = ''; parse({ quiet: true }); });
+  urlField.addEventListener('change', () => parse());
+  urlField.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); parse(); } });
   addParamRow(); // start with one empty row so the table is ready to use
 
   body.append(
     h('div', { class: 'io-box' },
       h('div', { class: 'io-label-row' },
         h('span', { class: 'io-label' }, 'URL'),
-        copyBtn(() => urlField.value),
+        h('div', { class: 'io-actions' },
+          h('button', {
+            class: 'btn-copy', type: 'button', html: icons.sample + ' Example',
+            onClick: () => { setField(urlField, 'https://user@api.example.com:8443/v1/search?q=web+tools&page=2&sort=desc#results'); },
+          }),
+          copyButton(() => urlField.value),
+        ),
       ),
       urlField,
       error,
-      h('div', { class: 'tool-actions', style: 'margin-top:.6rem' },
-        h('button', { class: 'btn btn-primary', type: 'button', onClick: parse }, 'Parse'),
-        h('span', { class: 'kbd-hint' }, 'Edit the fields below to rebuild the URL live'),
-      ),
+      h('p', { class: 'kbd-hint' }, 'Fields update as you type. Edit any field below and the URL rebuilds.'),
     ),
     h('div', { class: 'url-parts' }, ...Object.values(parts).map((p) => p.row)),
     h('div', { class: 'params-block' },
@@ -122,6 +130,7 @@ function urlParserMount(body) {
 export default [
   {
     id: 'url-parse', category: 'URL', name: 'Parser', title: 'URL Parser',
+    keywords: 'query string params link uri',
     desc: 'Break a URL into editable parts. Change any field or query parameter and the full URL rebuilds instantly.',
     mount: urlParserMount,
   },

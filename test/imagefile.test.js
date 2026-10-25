@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectImage, stripImageMetadata, detectFormat } from '../src/imagefile.js';
+import { inspectImage, stripImageMetadata, detectFormat } from '../src/lib/imagefile.js';
 import { buildJpeg, buildPng, buildWebp, toArrayBuffer } from './helpers/image-fixtures.js';
 
 /** Flatten a report's groups into a `{ tagName: value }` lookup. */
