@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { encodeQr, qrToSvg } from '../src/qr.js';
+import { encodeQr, qrToSvg } from '../src/lib/qr.js';
 import { scanQr, dataCodewordCount } from './helpers/qr-scanner.js';
 
 const LEVELS = ['L', 'M', 'Q', 'H'];

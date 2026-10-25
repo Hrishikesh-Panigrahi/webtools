@@ -25,6 +25,10 @@
   --json-bool: #8250df;
   --json-null: var(--text-dim);
   --json-punct: var(--text-dim);
+  --star: #d99a00;
+  /* Editors draw their own line numbers, so text rows must be a whole pixel tall. */
+  --editor-line: 20px;
+  --status-height: 28px;
 }
 :root[data-theme="dark"] {
   --bg: #0f1216;
@@ -41,6 +45,7 @@
   --json-string: #7ee787;
   --json-number: #ffab70;
   --json-bool: #d2a8ff;
+  --star: #f2c14e;
 }
 
 * { box-sizing: border-box; }
@@ -195,8 +200,25 @@ body {
   width: 2px; height: 16px; border-radius: 2px; background: var(--accent);
 }
 .nav-empty { font-size: .83rem; color: var(--text-dim); padding: .5rem; }
+.nav-item mark, .palette-name mark { background: none; color: var(--accent); font-weight: 700; }
+.nav-home {
+  display: flex; align-items: center; gap: .5rem; margin-bottom: .35rem; padding: .38rem .45rem;
+  border-radius: 7px; font-size: .8rem; font-weight: 600; color: var(--text-dim); text-decoration: none;
+  transition: background .12s, color .12s;
+}
+.nav-home .nav-group-icon svg { width: 15px; height: 15px; }
+.nav-home:hover { background: var(--surface-2); color: var(--text); }
+.nav-home.active { background: var(--accent-weak); color: var(--accent); }
 
 .main { flex: 1; overflow-y: auto; padding: 1.4rem 1.6rem; }
+/* Dragging a file over a tool: outline the drop area and say what will happen. */
+.main.is-dropping { outline: 2px dashed var(--accent); outline-offset: -10px; }
+.main.is-dropping::after {
+  content: 'Drop to load the file into the input';
+  position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 40; pointer-events: none;
+  padding: .5rem .9rem; border-radius: var(--radius); background: var(--accent); color: #fff; font-size: .82rem; font-weight: 600;
+}
+.palette-mobile { display: none; }
 .sidebar-backdrop { display: none; }
 
 /* ===================== Responsive (shell) ===================== */
@@ -205,6 +227,7 @@ body {
   /* The palette trigger loses its space to the logo and controls; ⌘K still works. */
   .header { grid-template-columns: 1fr auto; }
   .palette-trigger { display: none; }
+  .palette-mobile { display: grid; }
   .sidebar {
     position: fixed; top: 56px; bottom: 0; left: 0; z-index: 30;
     transform: translateX(-100%); transition: transform .2s ease;

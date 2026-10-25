@@ -1,4 +1,4 @@
-// Regenerates src/prices.json from upstream price feeds. Runs in CI, never in
+// Regenerates src/lib/prices.json from upstream price feeds. Runs in CI, never in
 // the browser — the committed JSON is what ships, so the site stays static,
 // offline and keyless.
 //
@@ -94,9 +94,9 @@ async function main() {
   });
 
   const table = { fetchedAt: today, sources: Object.values(SOURCES), models };
-  await writeFile(new URL('../src/prices.json', import.meta.url), `${JSON.stringify(table, null, 2)}\n`);
+  await writeFile(new URL('../src/lib/prices.json', import.meta.url), `${JSON.stringify(table, null, 2)}\n`);
 
-  console.log(`Wrote src/prices.json — ${models.length} models, both sources agreed.`);
+  console.log(`Wrote src/lib/prices.json — ${models.length} models, both sources agreed.`);
   for (const model of models) {
     console.log(`  ${model.id.padEnd(18)} $${model.input} in / $${model.output} out per Mtok`);
   }
@@ -104,6 +104,6 @@ async function main() {
 
 main().catch((error) => {
   console.error(`Price refresh failed: ${error.message}`);
-  console.error('src/prices.json was left unchanged.');
+  console.error('src/lib/prices.json was left unchanged.');
   process.exit(1);
 });
