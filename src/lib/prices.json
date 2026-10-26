@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-29",
+  "fetchedAt": "2026-10-26",
   "sources": [
     "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
     "https://models.dev/api.json"
@@ -39,8 +39,7 @@
       "output": 10,
       "cacheRead": 0.2,
       "cacheWrite": 2.5,
-      "context": 1000000,
-      "note": "an introductory rate that rises to $3 / $15 after 2026-08-31"
+      "context": 1000000
     },
     {
       "id": "claude-sonnet-4-6",
