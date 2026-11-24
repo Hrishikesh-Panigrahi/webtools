@@ -26,7 +26,7 @@ initTheme();
 
 const main = h('main', { class: 'main' });
 const layout = h('div', { class: 'body' });
-const sidebar = createSidebar({ tools, categories, findTool, layout });
+const sidebar = createSidebar({ categories, findTool, layout });
 const help = createHelpDialog();
 const palette = createPalette({ tools, findTool, getCommands: paletteCommands, openTool });
 const header = createHeader({
@@ -105,7 +105,7 @@ document.addEventListener('keydown', (event) => {
     sidebar.close();
   } else if (event.key === '/' && !isTyping) {
     event.preventDefault();
-    if (sidebar.isHidden()) palette.open(); else sidebar.focusSearch();
+    palette.open();
   } else if (event.key === '?' && !isTyping) {
     event.preventDefault();
     help.open();

@@ -211,7 +211,7 @@ function csvMount(body) {
     ...[CSV_TO_JSON, 'JSON → CSV'].map((label) => h('option', {}, label)));
   const delimiter = h('select', { class: 'select' }, ...Object.keys(DELIMITERS).map((label) => h('option', {}, label)));
   const { row: options, boxes } = toggleRow([TYPED]);
-  const input = h('textarea', { class: 'io-textarea tall', spellcheck: 'false', placeholder: 'name,role\nAda,engineer' });
+  const input = h('textarea', { class: 'io-textarea tall', spellcheck: 'false', placeholder: 'Paste CSV…', 'data-sample': 'name,role\nAda,engineer' });
   const output = h('textarea', { class: 'io-textarea tall', readonly: true, spellcheck: 'false' });
   const inputEditor = codeEditor(input);
   const outputEditor = codeEditor(output);
@@ -223,7 +223,8 @@ function csvMount(body) {
     const toJson = direction.value === CSV_TO_JSON;
     inputLabel.textContent = toJson ? 'CSV' : 'JSON';
     outputLabel.textContent = toJson ? 'JSON' : 'CSV';
-    input.placeholder = toJson ? 'name,role\nAda,engineer' : '[{"name":"Ada","role":"engineer"}]';
+    input.placeholder = toJson ? 'Paste CSV…' : 'Paste a JSON array…';
+    input.dataset.sample = toJson ? 'name,role\nAda,engineer\nLinus,maintainer' : '[{"name":"Ada","role":"engineer"},{"name":"Linus","role":"maintainer"}]';
     options.hidden = !toJson;
 
     error.textContent = '';
@@ -319,18 +320,18 @@ function unitMount(body) {
 }
 
 export default [
-  { id: 'time-unix', category: 'Convert', name: 'Timestamp', title: 'Unix Timestamp Converter', keywords: 'epoch date time iso 8601 utc', desc: 'Convert between Unix timestamps and human-readable dates, both ways.', mount: timestampMount },
+  { id: 'time-unix', category: 'Convert', name: 'Timestamp', title: 'Unix Timestamp Converter', keywords: 'epoch date time iso 8601 utc', desc: 'Convert between Unix timestamps and dates.', mount: timestampMount },
   {
     id: 'unit-convert', category: 'Convert', name: 'Units', title: 'Unit Converter',
     keywords: 'length weight temperature bytes speed measure',
-    desc: 'Convert length, mass, temperature, data, speed and more. Shows every unit at once.',
+    desc: 'Convert length, mass, temperature, data and more.',
     mount: unitMount,
   },
-  { id: 'num-base', category: 'Convert', name: 'Number Base', title: 'Number Base Converter', keywords: 'hex binary octal decimal radix', desc: 'Convert integers between decimal, hex, octal and binary (arbitrary precision).', mount: baseMount },
+  { id: 'num-base', category: 'Convert', name: 'Number Base', title: 'Number Base Converter', keywords: 'hex binary octal decimal radix', desc: 'Convert numbers between decimal, hex, octal and binary.', mount: baseMount },
   {
     id: 'csv-json', category: 'Convert', name: 'CSV ⇄ JSON', title: 'CSV ⇄ JSON Converter',
     keywords: 'spreadsheet table tsv excel',
-    desc: 'Turn a spreadsheet export into JSON records, or JSON back into CSV. Quoted fields, embedded newlines and custom delimiters all work.',
+    desc: 'Convert CSV to JSON and back.',
     mount: csvMount,
   },
 ];

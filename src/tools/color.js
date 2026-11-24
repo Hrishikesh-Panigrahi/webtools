@@ -1,4 +1,4 @@
-import { h } from '../ui/dom.js';
+import { h, setField } from '../ui/dom.js';
 import { icons } from '../ui/icons.js';
 import { copyButton } from '../ui/buttons.js';
 
@@ -66,10 +66,11 @@ function colorMount(body) {
   }
 
   const run = (src) => {
+    swatch.classList.toggle('is-empty', !src.trim());
     if (!src.trim()) {
       error.textContent = '';
-      for (const k in rows) rows[k].value = '';
-      swatch.style.background = 'transparent';
+      Object.values(rows).forEach((readout) => { readout.value = ''; });
+      swatch.style.background = '';
       return;
     }
     const rgb = parseColor(src);
@@ -86,7 +87,8 @@ function colorMount(body) {
   };
 
   input.addEventListener('input', () => run(input.value));
-  picker.addEventListener('input', () => { input.value = picker.value; run(picker.value); });
+  // Through setField, so a picked color is saved and shared like a typed one.
+  picker.addEventListener('input', () => setField(input, picker.value));
 
   body.append(
     h('div', { class: 'io-box' },
@@ -96,6 +98,7 @@ function colorMount(body) {
     ),
     h('div', { class: 'color-preview' }, swatch, outWrap),
   );
+  run('');
   input.focus();
 }
 
@@ -194,11 +197,11 @@ function gradientMount(body) {
 }
 
 export default [
-  { id: 'color-convert', category: 'Color', name: 'Converter', title: 'Color Converter', keywords: 'hex rgb hsl picker colour', desc: 'Convert between HEX, RGB and HSL, with a live swatch and picker.', mount: colorMount },
+  { id: 'color-convert', category: 'Color', name: 'Converter', title: 'Color Converter', keywords: 'hex rgb hsl picker colour', desc: 'Convert colors between HEX, RGB and HSL.', mount: colorMount },
   {
     id: 'color-gradient', category: 'Color', name: 'Gradient', title: 'CSS Gradient Generator',
     keywords: 'linear radial conic background css',
-    desc: 'Build a linear, radial or conic gradient and copy the CSS.',
+    desc: 'Build a CSS gradient and copy the code.',
     mount: gradientMount,
   },
 ];

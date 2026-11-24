@@ -140,7 +140,7 @@ export default [
   {
     id: 'qr-generate', category: 'Generate', name: 'QR Code', title: 'QR Code Generator',
     keywords: 'barcode wifi vcard',
-    desc: 'Make a QR code from text, a URL, WiFi credentials or a contact card. Downloads as PNG or SVG.',
+    desc: 'Make a QR code for text, a URL, WiFi or a contact.',
     mount: qrMount,
   },
 ];

@@ -91,7 +91,7 @@ function mdToHtml(src) {
 }
 
 function markdownMount(body) {
-  const input = h('textarea', { class: 'io-textarea', placeholder: '# Hello\n\nSome **bold** text with a [link](https://example.com) and `code`.\n\n- one\n- two', spellcheck: 'false' });
+  const input = h('textarea', { class: 'io-textarea', placeholder: 'Write Markdown…', 'data-sample': '# Hello\n\nSome **bold** text with a [link](https://example.com) and `code`.\n\n- one\n- two', spellcheck: 'false' });
   const editor = codeEditor(input, { wrap: true });
   const preview = h('div', { class: 'md-preview' });
   let html = '';
@@ -120,5 +120,5 @@ function markdownMount(body) {
 }
 
 export default [
-  { id: 'md-preview', category: 'Text', name: 'Markdown', title: 'Markdown Preview', keywords: 'md render html readme', desc: 'Live preview of common Markdown, with the generated HTML one click away. Raw HTML is escaped and link URLs are sanitized.', mount: markdownMount },
+  { id: 'md-preview', category: 'Text', name: 'Markdown', title: 'Markdown Preview', keywords: 'md render html readme', desc: 'Preview Markdown and copy the HTML.', mount: markdownMount },
 ];

@@ -1,5 +1,6 @@
 import { h } from '../ui/dom.js';
 import { copyButton } from '../ui/buttons.js';
+import { inputHeader } from '../ui/panel.js';
 
 const ALGORITHMS = ['SHA-256', 'SHA-1', 'SHA-384', 'SHA-512'];
 
@@ -35,7 +36,7 @@ function hashMount(body) {
   algorithm.addEventListener('change', run);
 
   body.append(
-    h('div', { class: 'io-box' }, h('div', { class: 'io-label' }, 'Input'), input),
+    h('div', { class: 'io-box' }, inputHeader('Input', input), input),
     h('div', { class: 'tool-actions' }, h('span', { class: 'io-label' }, 'Algorithm'), algorithm),
     h('div', { class: 'io-box' },
       h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Digest (hex)'), copyButton(() => output.value)),
@@ -126,7 +127,7 @@ function passwordMount(body) {
 }
 
 export default [
-  { id: 'hash-sha', category: 'Crypto', name: 'SHA Hash', title: 'SHA Hash', sensitive: true, keywords: 'sha256 sha1 sha512 digest checksum', desc: 'Compute a SHA-1/256/384/512 digest with the browser\'s Web Crypto API.', mount: hashMount },
-  { id: 'uuid-v4', category: 'Crypto', name: 'UUID v4', title: 'UUID v4 Generator', keywords: 'guid random id', desc: 'Generate cryptographically-random version-4 UUIDs.', mount: uuidMount },
-  { id: 'pw-gen', category: 'Crypto', name: 'Password', title: 'Password Generator', keywords: 'random secret passphrase', desc: 'Generate strong random passwords with the Web Crypto API. Pick length and character sets.', mount: passwordMount },
+  { id: 'hash-sha', category: 'Crypto', name: 'SHA Hash', title: 'SHA Hash', sensitive: true, keywords: 'sha256 sha1 sha512 digest checksum', desc: 'Hash text with SHA-1, SHA-256, SHA-384 or SHA-512.', mount: hashMount },
+  { id: 'uuid-v4', category: 'Crypto', name: 'UUID v4', title: 'UUID v4 Generator', keywords: 'guid random id', desc: 'Generate random v4 UUIDs.', mount: uuidMount },
+  { id: 'pw-gen', category: 'Crypto', name: 'Password', title: 'Password Generator', keywords: 'random secret passphrase', desc: 'Generate strong random passwords.', mount: passwordMount },
 ];

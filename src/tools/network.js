@@ -130,13 +130,13 @@ export default [
   {
     id: 'net-ip', category: 'Network', name: 'IP / CIDR', title: 'IP Subnet Calculator',
     keywords: 'subnet netmask ipv4 ipv6 range network',
-    desc: 'Network, broadcast, mask and host range for an IPv4 or IPv6 block, plus subnet splitting.',
+    desc: 'Work out the network, mask and host range of an IP block.',
     mount: ipMount,
   },
   {
     id: 'net-useragent', category: 'Network', name: 'User-Agent', title: 'User-Agent Parser',
     keywords: 'browser device os bot ua',
-    desc: 'Break a User-Agent string into browser, engine, OS and device, and spot bots.',
+    desc: 'Break a User-Agent string into browser, OS and device.',
     mount: userAgentMount,
   },
 ];

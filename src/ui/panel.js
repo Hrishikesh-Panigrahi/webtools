@@ -2,7 +2,7 @@
 
 import { h, setField, onRunKey } from './dom.js';
 import { icons } from './icons.js';
-import { copyButton, pasteButton, downloadButton, clearButton, exampleButton } from './buttons.js';
+import { actionButton, copyButton, pasteButton, downloadButton, clearButton, exampleButton } from './buttons.js';
 import { codeEditor } from './editor.js';
 import { errorNotice } from './notice.js';
 import { openTool } from '../navigation.js';
@@ -27,13 +27,13 @@ export function runOnInput(fields, run) {
   fields.forEach((field) => field.addEventListener('input', schedule));
 }
 
-/** The label row over an input: its name, then Example / Paste / Clear. */
+/** The label row over an input: its name, then Example (when it has a `data-sample`) / Paste / Clear. */
 export function inputHeader(label, field, extraActions = []) {
   return h('div', { class: 'io-label-row' },
     typeof label === 'string' ? h('span', { class: 'io-label' }, label) : label,
     h('div', { class: 'io-actions' },
       ...extraActions,
-      field.placeholder ? exampleButton(field) : null,
+      field.dataset.sample ? exampleButton(field) : null,
       pasteButton((text) => setField(field, text)),
       clearButton(field),
     ),
@@ -49,7 +49,8 @@ export function inputHeader(label, field, extraActions = []) {
  * the line and offers to jump to it.
  *
  * @param {Object} options
- * @param {string} [options.placeholder]   input placeholder, also loaded by "Example"
+ * @param {string} [options.placeholder]   a short hint for the empty input
+ * @param {string} [options.sample]        realistic input that the "Example" button loads
  * @param {string} [options.inputLabel]
  * @param {string} [options.outputLabel]
  * @param {boolean} [options.wrapInput]    soft-wrap the input editor (default on)
@@ -62,7 +63,8 @@ export function inputHeader(label, field, extraActions = []) {
  */
 export function transformTool(options) {
   const {
-    placeholder = '',
+    placeholder = 'Type or paste here…',
+    sample,
     inputLabel = 'Input',
     outputLabel = 'Output',
     wrapInput = true,
@@ -75,7 +77,7 @@ export function transformTool(options) {
   } = options;
 
   return (body) => {
-    const input = h('textarea', { class: 'io-textarea', placeholder, spellcheck: 'false' });
+    const input = h('textarea', { class: 'io-textarea', placeholder, 'data-sample': sample, spellcheck: 'false' });
     const output = h('textarea', { class: 'io-textarea', readonly: true, spellcheck: 'false' });
     const inputEditor = codeEditor(input, { wrap: wrapInput });
     const outputEditor = codeEditor(output, { wrap: wrapOutput });
@@ -114,8 +116,8 @@ export function transformTool(options) {
 
     const outputActions = h('div', { class: 'io-actions' });
     if (pipeTo) {
-      outputActions.append(h('button', {
-        class: 'btn-copy', type: 'button', html: `${icons.swap} ${pipeLabel}`, title: `${pipeLabel} this output`,
+      outputActions.append(actionButton(icons.swap, pipeLabel, {
+        title: `${pipeLabel} this output`,
         onClick: () => openTool(pipeTo, fullOutput),
       }));
     }

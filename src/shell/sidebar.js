@@ -1,11 +1,10 @@
-// The tool list: a filter box pinned over collapsible category groups, with
-// the user's pinned tools on top. On a phone it is a drawer; on a desktop the
-// menu button hides it to give a tool the full width.
+// The tool list: collapsible category groups, with the user's pinned tools on
+// top. Searching lives in the palette (Ctrl K or /), so the list stays a list.
+// On a phone it is a drawer; on a desktop the menu button hides it to give a
+// tool the full width.
 
 import { h } from '../ui/dom.js';
 import { icons, categoryIcons } from '../ui/icons.js';
-import { highlightMatches } from '../ui/highlight.js';
-import { rankTools } from '../lib/fuzzy.js';
 import { pinnedIds } from './prefs.js';
 import { readJson, writeJson, readText, writeText } from './storage.js';
 
@@ -17,24 +16,13 @@ export const isPhoneLayout = () => matchMedia(PHONE_LAYOUT).matches;
 
 /**
  * @param {Object} options
- * @param {Object[]} options.tools
  * @param {Object<string, Object[]>} options.categories
  * @param {(id:string) => Object|undefined} options.findTool
  * @param {HTMLElement} options.layout  the element whose `sidebar-collapsed` class hides it on a desktop
  */
-export function createSidebar({ tools, categories, findTool, layout }) {
-  const search = h('input', { class: 'search-input', placeholder: 'Filter tools…', spellcheck: 'false', 'aria-label': 'Filter tools' });
+export function createSidebar({ categories, findTool, layout }) {
   const navList = h('div', { class: 'nav' });
-  const element = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': 'Tools' },
-    h('div', { class: 'sidebar-head' },
-      h('div', { class: 'search-box' },
-        h('span', { class: 'search-icon', html: icons.search }),
-        search,
-        h('kbd', { class: 'search-key' }, '/'),
-      ),
-    ),
-    navList,
-  );
+  const element = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': 'Tools' }, navList);
   const backdrop = h('div', { class: 'sidebar-backdrop' });
   const savedCollapsed = readJson(COLLAPSED_GROUPS_KEY, []);
   const collapsedGroups = new Set(Array.isArray(savedCollapsed) ? savedCollapsed : []);
@@ -42,8 +30,7 @@ export function createSidebar({ tools, categories, findTool, layout }) {
 
   if (readText(SIDEBAR_KEY) === 'collapsed') layout.classList.add('sidebar-collapsed');
 
-  const navItem = (tool, nameIndices) => h('a', { class: 'nav-item', href: '#' + tool.id, 'data-id': tool.id },
-    ...highlightMatches(tool.name, nameIndices));
+  const navItem = (tool) => h('a', { class: 'nav-item', href: '#' + tool.id, 'data-id': tool.id }, tool.name);
 
   function navGroup(name, iconHtml, items) {
     const isCollapsed = collapsedGroups.has(name);
@@ -72,22 +59,12 @@ export function createSidebar({ tools, categories, findTool, layout }) {
     navList.querySelector('.nav-home')?.classList.toggle('active', !activeId);
   }
 
-  // Filtering ranks every tool into one flat list, best match first, so Enter
-  // in the filter box can open the top hit.
   function render() {
-    const query = search.value.trim();
-    navList.replaceChildren();
-    if (query) {
-      const ranked = rankTools(query, tools);
-      navList.append(...ranked.map(({ tool, nameIndices }) => navItem(tool, nameIndices)));
-      if (!ranked.length) navList.append(h('div', { class: 'nav-empty' }, 'No tools match.'));
-    } else {
-      navList.append(h('a', { class: 'nav-home', href: '#' }, h('span', { class: 'nav-group-icon', html: icons.grid }), 'All tools'));
-      const pinned = pinnedIds().map(findTool).filter(Boolean);
-      if (pinned.length) navList.append(navGroup('Pinned', icons.star, pinned.map((tool) => navItem(tool))));
-      for (const [category, list] of Object.entries(categories)) {
-        navList.append(navGroup(category, categoryIcons[category], list.map((tool) => navItem(tool))));
-      }
+    navList.replaceChildren(h('a', { class: 'nav-home', href: '#' }, h('span', { class: 'nav-group-icon', html: icons.grid }), 'All tools'));
+    const pinned = pinnedIds().map(findTool).filter(Boolean);
+    if (pinned.length) navList.append(navGroup('Pinned', icons.star, pinned.map(navItem)));
+    for (const [category, list] of Object.entries(categories)) {
+      navList.append(navGroup(category, categoryIcons[category], list.map(navItem)));
     }
     paintActive();
   }
@@ -96,19 +73,12 @@ export function createSidebar({ tools, categories, findTool, layout }) {
   function moveFocus(step) {
     const links = [...navList.querySelectorAll('.nav-home, .nav-item, .nav-group-label')].filter((link) => link.offsetParent !== null);
     const index = links.indexOf(document.activeElement);
-    if (index === 0 && step < 0) { search.focus(); return; }
     links[Math.max(0, Math.min(links.length - 1, index + step))]?.focus();
   }
 
   const open = () => { element.classList.add('open'); backdrop.classList.add('show'); };
   const close = () => { element.classList.remove('open'); backdrop.classList.remove('show'); };
 
-  search.addEventListener('input', render);
-  search.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowDown') { event.preventDefault(); moveFocus(1); }
-    else if (event.key === 'Enter') { event.preventDefault(); navList.querySelector('.nav-item')?.click(); }
-    else if (event.key === 'Escape' && search.value) { event.stopPropagation(); search.value = ''; render(); }
-  });
   navList.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
     event.preventDefault();
@@ -126,9 +96,6 @@ export function createSidebar({ tools, categories, findTool, layout }) {
       activeId = id;
       paintActive();
     },
-    /** Whether the list is out of sight: a closed drawer, or hidden on a desktop. */
-    isHidden: () => (isPhoneLayout() ? !element.classList.contains('open') : layout.classList.contains('sidebar-collapsed')),
-    focusSearch: () => search.focus(),
     toggle() {
       if (isPhoneLayout()) {
         if (element.classList.contains('open')) close(); else open();

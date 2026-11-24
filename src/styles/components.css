@@ -27,6 +27,9 @@
    one to nothing. Pinning min-width:0 keeps the split even and lets the child's
    own `overflow: auto` do the scrolling. */
 .io-grid > * { min-width: 0; }
+/* Two inputs whose result shows below them: keep the panes short enough that
+   the result is on screen while you type. */
+.io-grid.compact { --pane-height: clamp(150px, 30vh, 300px); }
 
 /* The divider takes the width the grid gap used to occupy, so adding one does
    not shift the panes. Its grabber only appears on hover, focus or drag. */
@@ -43,7 +46,12 @@
 .split-handle:focus-visible { outline: none; box-shadow: none; }
 /* Dragging over a textarea would otherwise start selecting its text. */
 .io-grid.splitting { user-select: none; }
-.io-box { display: flex; flex-direction: column; gap: .35rem; }
+.io-box { display: flex; flex-direction: column; gap: .35rem; container-type: inline-size; }
+/* In a narrow pane, header buttons drop their words and keep their icons
+   (the words stay as tooltips), so the header never wraps onto a second line. */
+@container (max-width: 460px) {
+  .io-label-row .btn-label { display: none; }
+}
 .io-label, .io-label-row { font-size: .75rem; font-weight: 600; color: var(--text-dim); }
 .io-label-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
 .io-label-row .rx-info { margin: 0; }
@@ -205,6 +213,7 @@
 .color-picker { width: 42px; height: 38px; padding: 0; border: 1px solid var(--border); border-radius: 7px; background: none; cursor: pointer; flex: none; }
 .color-preview { display: flex; gap: 1rem; margin-top: 1rem; }
 .color-swatch { width: 100px; flex: none; border-radius: var(--radius-lg); border: 1px solid var(--border); min-height: 100px; }
+.color-swatch.is-empty { border-style: dashed; background: none; }
 .color-outputs { display: flex; flex-direction: column; gap: .5rem; flex: 1; }
 .color-out-row { display: grid; grid-template-columns: 88px 1fr auto; gap: .5rem; align-items: center; }
 
@@ -499,9 +508,9 @@
   .qr-control > .slider { flex: 1; width: auto; }
   .gradient-stop { grid-template-columns: auto 1fr 44px 30px; }
   .io-grid { --pane-height: clamp(180px, 42vh, 420px); }
+  .io-grid.compact { --pane-height: clamp(110px, 20vh, 180px); }
   .palette-desc, .palette-footer, .editor-position { display: none; }
-  .tool-header { flex-direction: column-reverse; gap: .3rem; }
-  .tool-toolbar { align-self: flex-end; margin-bottom: -.4rem; }
+  .tool-header { gap: .5rem; }
 }
 @media (max-width: 720px) {
   .color-preview { flex-direction: column; }

@@ -1,6 +1,6 @@
 import { h, setField } from '../ui/dom.js';
 import { icons } from '../ui/icons.js';
-import { copyButton } from '../ui/buttons.js';
+import { actionButton, copyButton } from '../ui/buttons.js';
 import { transformTool, toggleRow, inputHeader, runOnInput } from '../ui/panel.js';
 import { diffView } from '../ui/diffView.js';
 import { codeEditor } from '../ui/editor.js';
@@ -30,14 +30,14 @@ const CASES = {
 };
 
 function caseMount(body) {
-  const input = h('textarea', { class: 'io-textarea', placeholder: 'The quick brown fox', spellcheck: 'false' });
+  const input = h('textarea', { class: 'io-textarea', placeholder: 'Type or paste text…', 'data-sample': 'parseHTTPResponse for the user_name field', spellcheck: 'false' });
   const output = h('textarea', { class: 'io-textarea', readonly: true, spellcheck: 'false' });
   const targetCase = h('select', { class: 'select' }, ...Object.keys(CASES).map((name) => h('option', {}, name)));
   const run = () => { output.value = input.value ? CASES[targetCase.value](input.value) : ''; };
   input.addEventListener('input', run);
   targetCase.addEventListener('change', run);
   body.append(
-    h('div', { class: 'io-box' }, h('div', { class: 'io-label' }, 'Text'), input),
+    h('div', { class: 'io-box' }, inputHeader('Text', input), input),
     h('div', { class: 'tool-actions' }, h('span', { class: 'io-label' }, 'Convert to'), targetCase),
     h('div', { class: 'io-box' },
       h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Result'), copyButton(() => output.value)),
@@ -72,7 +72,7 @@ function counterMount(body) {
     byteCount.textContent = new TextEncoder().encode(text).length.toLocaleString();
   };
   input.addEventListener('input', run);
-  body.append(h('div', { class: 'io-box' }, input), stats);
+  body.append(h('div', { class: 'io-box' }, inputHeader('Text', input), input), stats);
   input.focus();
 }
 
@@ -107,58 +107,70 @@ function loremMount(body) {
   generate();
 }
 
+// Highlighting stops here: a pattern that matches everywhere (`.`, `\b`)
+// would otherwise build a million <mark>s from a large paste.
+const MAX_HIGHLIGHTED_MATCHES = 50_000;
+
 function regexMount(body) {
   const pattern = h('input', { class: 'url-field', spellcheck: 'false', placeholder: '\\b\\w+@\\w+\\.\\w+\\b' });
-  const flags = h('input', { class: 'part-input', spellcheck: 'false', placeholder: 'gi', style: 'max-width:6rem' });
+  const flags = h('input', { class: 'part-input', spellcheck: 'false', placeholder: 'gi', style: 'max-width:6rem', 'aria-label': 'Flags' });
   const test = h('textarea', { class: 'io-textarea', placeholder: 'Text to match against…', spellcheck: 'false' });
+  const loadExample = actionButton(icons.sample, 'Example', {
+    title: 'Load an example',
+    onClick: () => {
+      setField(pattern, '(\\w+)@(\\w+)\\.com');
+      setField(flags, 'gi');
+      setField(test, 'Write to ada@example.com or linus@kernel.com, not to bob@site.org.');
+    },
+  });
   const error = h('div', { class: 'io-error' });
-  const info = h('div', { class: 'rx-info' });
+  const summary = h('div', { class: 'rx-info' });
   const highlight = h('div', { class: 'rx-highlight' });
 
   const run = () => {
     error.textContent = '';
-    info.textContent = '';
+    summary.textContent = '';
     if (!pattern.value) { highlight.textContent = test.value; return; }
 
     const text = test.value;
-    let out = '', last = 0, count = 0, firstGroups = null, match;
+    let marked = '';
+    let consumed = 0;
+    let matchCount = 0;
+    let firstGroups = null;
     // The scan sits inside the try as well as the construction: V8 compiles a
     // pattern lazily, so an over-large one throws on the first exec, not on new.
     try {
-      const flagStr = flags.value.includes('g') ? flags.value : flags.value + 'g';
-      const re = new RegExp(pattern.value, flagStr);
-      re.lastIndex = 0;
-      while ((match = re.exec(text)) !== null) {
-        out += escapeHtml(text.slice(last, match.index));
+      const expression = new RegExp(pattern.value, flags.value.includes('g') ? flags.value : flags.value + 'g');
+      for (let match = expression.exec(text); match; match = expression.exec(text)) {
+        marked += escapeHtml(text.slice(consumed, match.index));
         // A zero-length match (e.g. `a*`) has nothing to highlight — counting it is
         // enough; an empty <mark> would just render as a stray sliver.
-        if (match[0]) out += '<mark class="rx-hit">' + escapeHtml(match[0]) + '</mark>';
-        last = match.index + match[0].length;
-        count++;
+        if (match[0]) marked += '<mark class="rx-hit">' + escapeHtml(match[0]) + '</mark>';
+        consumed = match.index + match[0].length;
+        matchCount++;
         if (match.length > 1 && !firstGroups) firstGroups = match.slice(1);
-        if (match.index === re.lastIndex) re.lastIndex++; // guard against zero-length matches
-        if (count > 50000) break; // safety valve
+        if (match.index === expression.lastIndex) expression.lastIndex++;
+        if (matchCount >= MAX_HIGHLIGHTED_MATCHES) break;
       }
-    } catch (e) {
-      error.textContent = e.message;
+    } catch (failure) {
+      error.textContent = failure.message;
       highlight.textContent = test.value;
       return;
     }
-    out += escapeHtml(text.slice(last));
-    highlight.innerHTML = out;
-    info.textContent = `${count} ${count === 1 ? 'match' : 'matches'}`
-      + (firstGroups ? ' · groups: ' + firstGroups.map((g, i) => `$${i + 1}=${g ?? ''}`).join(', ') : '');
+    highlight.innerHTML = marked + escapeHtml(text.slice(consumed));
+    const groups = firstGroups ? ' · first groups: ' + firstGroups.map((group, index) => `$${index + 1}=${group ?? ''}`).join(', ') : '';
+    summary.textContent = `${matchCount.toLocaleString()} ${matchCount === 1 ? 'match' : 'matches'}${groups}`;
   };
 
   [pattern, flags, test].forEach((field) => field.addEventListener('input', run));
   body.append(
     h('div', { class: 'io-box' },
-      h('div', { class: 'io-label' }, 'Pattern'),
+      h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Pattern'), h('div', { class: 'io-actions' }, loadExample)),
       h('div', { class: 'rx-pattern-row' }, pattern, flags),
       error,
     ),
-    h('div', { class: 'io-box' }, h('div', { class: 'io-label' }, 'Test text'), test),
-    h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Matches'), info),
+    h('div', { class: 'io-box' }, inputHeader('Test text', test), test),
+    h('div', { class: 'io-label-row' }, h('span', { class: 'io-label' }, 'Matches'), summary),
     highlight,
   );
   pattern.focus();
@@ -168,8 +180,8 @@ const IGNORE_WHITESPACE = 'Ignore whitespace';
 const IGNORE_CASE_IN_DIFF = 'Ignore case';
 
 function diffMount(body) {
-  const inputA = h('textarea', { class: 'io-textarea', placeholder: 'The quick brown fox\njumps over\nthe lazy dog', spellcheck: 'false' });
-  const inputB = h('textarea', { class: 'io-textarea', placeholder: 'The quick brown fox\nleaps over\nthe lazy dog\nand naps', spellcheck: 'false' });
+  const inputA = h('textarea', { class: 'io-textarea', placeholder: 'Paste the original text…', 'data-sample': 'The quick brown fox\njumps over\nthe lazy dog', spellcheck: 'false' });
+  const inputB = h('textarea', { class: 'io-textarea', placeholder: 'Paste the changed text…', 'data-sample': 'The quick brown fox\nleaps over\nthe lazy dog\nand naps', spellcheck: 'false' });
   const editorA = codeEditor(inputA);
   const editorB = codeEditor(inputB);
   const { row: options, boxes } = toggleRow([IGNORE_WHITESPACE, IGNORE_CASE_IN_DIFF]);
@@ -197,8 +209,8 @@ function diffMount(body) {
     }
   };
 
-  const swap = h('button', {
-    class: 'btn-copy', type: 'button', html: icons.swap + ' Swap', title: 'Swap the two sides',
+  const swap = actionButton(icons.swap, 'Swap', {
+    title: 'Swap the two sides',
     onClick: () => {
       const original = inputA.value;
       setField(inputA, inputB.value);
@@ -209,7 +221,7 @@ function diffMount(body) {
   runOnInput([inputA, inputB], run);
   Object.values(boxes).forEach((box) => box.addEventListener('change', run));
   body.append(
-    h('div', { class: 'io-grid' },
+    h('div', { class: 'io-grid compact' },
       h('div', { class: 'io-box' }, inputHeader('Original', inputA), editorA.root),
       h('div', { class: 'io-box' }, inputHeader('Changed', inputB, [swap]), editorB.root),
     ),
@@ -236,7 +248,7 @@ const IGNORE_CASE = 'Ignore case';
 const REVERSE = 'Reverse result';
 
 function linesMount(body) {
-  const input = h('textarea', { class: 'io-textarea tall', placeholder: 'banana\napple\ncherry\napple\n  banana', spellcheck: 'false' });
+  const input = h('textarea', { class: 'io-textarea tall', placeholder: 'One item per line…', 'data-sample': 'banana\napple\ncherry\napple\n  banana', spellcheck: 'false' });
   const output = h('textarea', { class: 'io-textarea tall', readonly: true, spellcheck: 'false' });
   const inputEditor = codeEditor(input);
   const outputEditor = codeEditor(output);
@@ -380,30 +392,30 @@ function speechMount(body) {
 }
 
 export default [
-  { id: 'text-case', category: 'Text', name: 'Case Converter', title: 'Case Converter', keywords: 'camel snake kebab pascal upper lower title', desc: 'Convert text between UPPER, lower, Title, camelCase, snake_case, kebab-case and more.', mount: caseMount },
-  { id: 'text-regex', category: 'Text', name: 'Regex Tester', title: 'Regex Tester', keywords: 'regexp pattern match capture', desc: 'Test a regular expression against sample text with live match highlighting and capture groups.', mount: regexMount },
-  { id: 'text-diff', category: 'Text', name: 'Diff', title: 'Text Diff', keywords: 'compare difference changes', desc: 'Line-by-line diff of two blocks of text. Green lines are added; red lines are removed.', mount: diffMount },
+  { id: 'text-case', category: 'Text', name: 'Case Converter', title: 'Case Converter', keywords: 'camel snake kebab pascal upper lower title', desc: 'Switch text between camelCase, snake_case, Title Case and more.', mount: caseMount },
+  { id: 'text-regex', category: 'Text', name: 'Regex Tester', title: 'Regex Tester', keywords: 'regexp pattern match capture', desc: 'Test a regular expression and see every match.', mount: regexMount },
+  { id: 'text-diff', category: 'Text', name: 'Diff', title: 'Text Diff', keywords: 'compare difference changes', desc: 'Compare two texts line by line.', mount: diffMount },
   {
     id: 'text-slugify', category: 'Text', name: 'Slugify', title: 'Slugify',
-    desc: 'Turn any text into a clean, URL-friendly slug.',
+    desc: 'Turn text into a URL-friendly slug.',
     keywords: 'url friendly permalink kebab',
     mount: transformTool({
-      placeholder: 'Hello, World! — My First Post',
+      sample: 'Hello, World! — My First Post',
       transform: (text) => text.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
     }),
   },
   {
     id: 'text-lines', category: 'Text', name: 'Sort & Dedupe', title: 'Sort & Deduplicate Lines',
     keywords: 'unique uniq lines order',
-    desc: 'Sort, trim and de-duplicate a list of lines. Useful for log output, ID lists and config blocks.',
+    desc: 'Sort, trim and de-duplicate lines.',
     mount: linesMount,
   },
-  { id: 'text-count', category: 'Text', name: 'Word Counter', title: 'Word & Character Counter', keywords: 'length characters count bytes', desc: 'Live counts of characters, words, lines, sentences and UTF-8 bytes.', mount: counterMount },
+  { id: 'text-count', category: 'Text', name: 'Word Counter', title: 'Word & Character Counter', keywords: 'length characters count bytes', desc: 'Count characters, words, lines and bytes.', mount: counterMount },
   { id: 'text-lorem', category: 'Text', name: 'Lorem Ipsum', title: 'Lorem Ipsum Generator', keywords: 'placeholder dummy filler text', desc: 'Generate placeholder paragraphs.', mount: loremMount },
   {
     id: 'text-speech', category: 'Text', name: 'Text to Speech', title: 'Text to Speech',
     keywords: 'tts read aloud voice',
-    desc: 'Read text aloud using the voices installed on your device.',
+    desc: 'Read text aloud with your device\'s voices.',
     mount: speechMount,
   },
 ];

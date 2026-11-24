@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Free, open-source, client-side developer tools — JSON, URL, encoding, hashing, and more.",
+  "description": "Developer tools for JSON, URLs, encoding, hashing and more.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

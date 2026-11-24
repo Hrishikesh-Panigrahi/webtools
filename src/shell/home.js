@@ -119,7 +119,7 @@ export function renderHome(container, { tools, categories, findTool, openTool })
     h('section', { class: 'home-hero' },
       h('h1', { class: 'home-title' }, 'What are you working with?'),
       h('p', { class: 'home-lede' },
-        `${tools.length} developer tools that run entirely in your browser. Paste something and the right one is suggested, or press `,
+        'Paste something and the right tool is suggested, or press ',
         h('kbd', {}, shortcutLabel('K')), ' to jump anywhere.'),
       box,
       suggestions,

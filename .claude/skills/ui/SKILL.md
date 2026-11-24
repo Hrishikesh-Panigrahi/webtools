@@ -53,7 +53,14 @@ Use these rather than inventing values, or the surface stops matching itself.
   `[hidden]` rules, and don't remove the global one.
 
 ## Inputs
-- Use placeholders to hint format — never prefill real example values into a field.
+- Placeholders are short hints ("Paste JSON…") — never a realistic value: greyed-out sample
+  data in an empty field reads as input that produced no output. Put the sample in
+  `data-sample` and let `inputHeader` add the Example button.
+- Every text input gets an `inputHeader` (Example / Paste / Clear) so tools behave alike.
+- Pane header buttons come from `actionButton` (icon + word). Their words hide in narrow
+  panes, so a header never wraps onto a second line and misaligns the columns.
+- A tool whose result sits below its inputs uses `io-grid compact`, so the result is on
+  screen while you type.
 - Keep visible focus states intact.
 - Accessible names come for free: after mount the shell gives each control the nearest
   visible `.io-label` / `.part-label`. A control in a bare `.tool-actions` row has no

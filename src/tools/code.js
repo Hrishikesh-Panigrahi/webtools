@@ -287,28 +287,28 @@ export default [
   {
     id: 'curl-fetch', category: 'Code', name: 'cURL → fetch', title: 'cURL to fetch()',
     keywords: 'http request javascript convert',
-    desc: 'Turn a copied cURL command into a fetch() call, headers and body included.',
+    desc: 'Turn a cURL command into a fetch() call.',
     mount: transformTool({
       inputLabel: 'cURL command', outputLabel: 'JavaScript', downloadName: 'request.js', wrapOutput: false,
-      placeholder: 'curl -X POST https://api.example.com/users \\\n  -H \'content-type: application/json\' \\\n  -d \'{"name":"Ada"}\'',
+      placeholder: 'Paste a cURL command…', sample: 'curl -X POST https://api.example.com/users \\\n  -H \'content-type: application/json\' \\\n  -d \'{"name":"Ada"}\'',
       transform: curlToFetch,
     }),
   },
   {
     id: 'json-types', category: 'Code', name: 'JSON → TypeScript', title: 'JSON to TypeScript',
     keywords: 'interface type definition ts generate',
-    desc: 'Generate interfaces from a JSON sample. Array elements are merged into one shape, and keys missing from some elements become optional.',
+    desc: 'Generate TypeScript interfaces from a JSON sample.',
     mount: transformTool({
       inputLabel: 'JSON', outputLabel: 'TypeScript', downloadName: 'types.ts',
       wrapInput: false, wrapOutput: false, repair: repairJson,
-      placeholder: '{"id":1,"name":"Ada","tags":["admin"],"team":{"slug":"core"}}',
+      placeholder: 'Paste JSON…', sample: '{"id":1,"name":"Ada","tags":["admin"],"team":{"slug":"core"}}',
       transform: jsonToTypes,
     }),
   },
   {
     id: 'cron-explain', category: 'Code', name: 'Cron Expression', title: 'Cron Expression Explainer',
     keywords: 'schedule crontab job timer',
-    desc: 'Read a cron schedule back in plain English, and see when it fires next.',
+    desc: 'Read a cron schedule in plain English and see when it runs next.',
     mount: cronMount,
   },
 ];

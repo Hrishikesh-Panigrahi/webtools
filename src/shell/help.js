@@ -3,8 +3,7 @@
 import { h, shortcutLabel } from '../ui/dom.js';
 
 const SHORTCUTS = [
-  [shortcutLabel('K'), 'Search tools, paste a snippet, or type > for commands'],
-  ['/', 'Filter the sidebar; ↑ ↓ to move, ↵ to open'],
+  [`${shortcutLabel('K')} or /`, 'Search tools, paste a snippet, or type > for commands'],
   [shortcutLabel('V'), 'Paste anywhere: into the tool\'s input, or onto the home page to find a tool'],
   [shortcutLabel('↵'), 'Run the current tool now, or open the suggested tool from home'],
   ['Tab / ⇧Tab', 'Indent or outdent lines in an editor'],
@@ -20,9 +19,8 @@ export function createHelpDialog() {
       ...SHORTCUTS.map(([keys, description]) => h('div', { class: 'help-row' },
         h('kbd', { class: 'help-keys' }, keys), h('span', {}, description))),
       h('p', { class: 'help-note' },
-        'Drop a text file anywhere on a tool to load it. Inputs are saved in this browser as you type — '
-        + 'except tokens, keys and other credentials, which are kept only until you close the tab. '
-        + 'Nothing you enter ever leaves your browser.'),
+        'Drop a text file anywhere on a tool to load it. Inputs are remembered as you type — '
+        + 'except tokens, keys and other credentials, which are kept only until you close the tab.'),
     ),
   );
   const close = () => element.classList.remove('open');

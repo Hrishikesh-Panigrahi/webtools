@@ -1,6 +1,6 @@
 import { h } from '../ui/dom.js';
 import { copyButton } from '../ui/buttons.js';
-import { keyValueRow, runOnInput } from '../ui/panel.js';
+import { keyValueRow, runOnInput, inputHeader } from '../ui/panel.js';
 import { estimateTokens, TOKEN_CLASSES } from '../lib/tokens.js';
 import { MODELS, PRICES_AS_OF } from '../lib/models.js';
 
@@ -97,10 +97,9 @@ function tokenMount(body) {
   expected.addEventListener('input', run);
 
   body.append(
-    h('p', { class: 'tool-hint' },
-      'Counts are estimated from how tokenizers split text rather than a real vocabulary, so expect to be within about 10% on prose and code.'),
-    h('div', { class: 'io-box' }, h('div', { class: 'io-label' }, 'Text'), input),
+    h('div', { class: 'io-box' }, inputHeader('Text', input), input),
     stats,
+    h('p', { class: 'tool-hint' }, 'An estimate: usually within about 10% of the real count for prose and code.'),
     h('div', { class: 'tool-actions' },
       h('span', { class: 'io-label' }, 'Model'), model,
       h('span', { class: 'io-label' }, 'Expected output tokens'), expected,
@@ -125,7 +124,7 @@ function tokenMount(body) {
       ),
     ),
     h('p', { class: 'tool-hint' },
-      `Prices are the rates in effect on ${PRICES_AS_OF}, bundled at build time from two public feeds that had to agree — the page itself makes no network calls. Check the pricing page before billing anyone off them.`),
+      `Prices as of ${PRICES_AS_OF}. Check the official pricing page before billing anyone off them.`),
   );
   run();
   input.focus();
@@ -135,7 +134,7 @@ export default [
   {
     id: 'ai-tokens', category: 'AI', name: 'Token Predictor', title: 'LLM Token Predictor',
     keywords: 'llm tokens cost price context claude gpt prompt',
-    desc: 'Estimate how many tokens a prompt uses, what it costs on each Claude model, and how much of the context window it fills.',
+    desc: 'Estimate tokens, cost and context use for a prompt.',
     mount: tokenMount,
   },
 ];

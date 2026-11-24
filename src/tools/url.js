@@ -1,6 +1,6 @@
 import { h, setField } from '../ui/dom.js';
 import { icons } from '../ui/icons.js';
-import { copyButton } from '../ui/buttons.js';
+import { actionButton, copyButton } from '../ui/buttons.js';
 
 // Editable URL parser: break a URL into parts + a query-param table.
 // Edit any field or param and the full URL rebuilds live. Paste a URL and
@@ -102,9 +102,9 @@ function urlParserMount(body) {
       h('div', { class: 'io-label-row' },
         h('span', { class: 'io-label' }, 'URL'),
         h('div', { class: 'io-actions' },
-          h('button', {
-            class: 'btn-copy', type: 'button', html: icons.sample + ' Example',
-            onClick: () => { setField(urlField, 'https://user@api.example.com:8443/v1/search?q=web+tools&page=2&sort=desc#results'); },
+          actionButton(icons.sample, 'Example', {
+            title: 'Load an example',
+            onClick: () => setField(urlField, 'https://user@api.example.com:8443/v1/search?q=web+tools&page=2&sort=desc#results'),
           }),
           copyButton(() => urlField.value),
         ),
@@ -131,7 +131,7 @@ export default [
   {
     id: 'url-parse', category: 'URL', name: 'Parser', title: 'URL Parser',
     keywords: 'query string params link uri',
-    desc: 'Break a URL into editable parts. Change any field or query parameter and the full URL rebuilds instantly.',
+    desc: 'Split a URL into editable parts and rebuild it.',
     mount: urlParserMount,
   },
 ];

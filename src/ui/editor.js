@@ -138,7 +138,8 @@ export function codeEditor(textarea, { wrap = false } = {}) {
       }
     }
     gutterLines.dataset.count = isWrapping() ? '' : String(lineCount);
-    size.textContent = `${lineCount.toLocaleString()} ${lineCount === 1 ? 'line' : 'lines'} · ${formatBytes(new Blob([text]).size)}`;
+    // An empty editor has nothing worth counting.
+    size.textContent = text ? `${lineCount.toLocaleString()} ${lineCount === 1 ? 'line' : 'lines'} · ${formatBytes(new Blob([text]).size)}` : '';
   }
 
   const rowsBefore = (line) => (rowsPerLine.length
@@ -154,7 +155,12 @@ export function codeEditor(textarea, { wrap = false } = {}) {
     errorLine.style.height = `${(rowsPerLine[errorLineNumber - 1] ?? 1) * height}px`;
   }
 
+  // The caret position only means something while you are working in the editor.
   function paintPosition() {
+    if (document.activeElement !== textarea) {
+      position.textContent = '';
+      return;
+    }
     const { selectionStart, selectionEnd, value } = textarea;
     const { line, column } = locate(value, selectionStart);
     const selected = selectionEnd - selectionStart;
@@ -193,7 +199,7 @@ export function codeEditor(textarea, { wrap = false } = {}) {
 
   textarea.addEventListener('input', refresh);
   textarea.addEventListener('scroll', syncScroll);
-  for (const type of ['keyup', 'mouseup', 'select', 'focus', 'selectionchange']) textarea.addEventListener(type, paintPosition);
+  for (const type of ['keyup', 'mouseup', 'select', 'focus', 'blur', 'selectionchange']) textarea.addEventListener(type, paintPosition);
   wrapToggle.addEventListener('change', applyWrap);
   new ResizeObserver(() => { if (isWrapping()) refresh(); else syncScroll(); }).observe(textarea);
 

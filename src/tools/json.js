@@ -1,6 +1,6 @@
 import { h, setField, onRunKey } from '../ui/dom.js';
 import { icons } from '../ui/icons.js';
-import { copyButton, copyText, downloadButton } from '../ui/buttons.js';
+import { actionButton, copyButton, copyText, downloadButton } from '../ui/buttons.js';
 import { toast } from '../ui/toast.js';
 import { transformTool, inputHeader, runOnInput } from '../ui/panel.js';
 import { diffView } from '../ui/diffView.js';
@@ -36,7 +36,7 @@ function describeShape(value) {
 }
 
 function validateMount(body) {
-  const input = h('textarea', { class: 'io-textarea tall', placeholder: '{"valid": true, "tags": ["a", "b"]}', spellcheck: 'false' });
+  const input = h('textarea', { class: 'io-textarea tall', placeholder: 'Paste JSON…', 'data-sample': '{\n  "valid": true,\n  "tags": ["a", "b"],\n}', spellcheck: 'false' });
   const editor = codeEditor(input);
   const notice = errorNotice(editor);
   const verdict = h('div', { class: 'validate-msg' });
@@ -64,8 +64,8 @@ function validateMount(body) {
 }
 
 function compareMount(body) {
-  const inputA = h('textarea', { class: 'io-textarea', placeholder: '{"name":"Alice","age":30,"tags":["admin"]}', spellcheck: 'false' });
-  const inputB = h('textarea', { class: 'io-textarea', placeholder: '{"age":31,"name":"Alice","tags":["admin","dev"]}', spellcheck: 'false' });
+  const inputA = h('textarea', { class: 'io-textarea', placeholder: 'Paste the first JSON…', 'data-sample': '{"name":"Alice","age":30,"tags":["admin"]}', spellcheck: 'false' });
+  const inputB = h('textarea', { class: 'io-textarea', placeholder: 'Paste the second JSON…', 'data-sample': '{"age":31,"name":"Alice","tags":["admin","dev"]}', spellcheck: 'false' });
   const sides = [inputA, inputB].map((input) => {
     const editor = codeEditor(input);
     return { input, editor, notice: errorNotice(editor) };
@@ -97,8 +97,8 @@ function compareMount(body) {
     }
   };
 
-  const swap = h('button', {
-    class: 'btn-copy', type: 'button', html: icons.swap + ' Swap', title: 'Swap A and B',
+  const swap = actionButton(icons.swap, 'Swap', {
+    title: 'Swap A and B',
     onClick: () => {
       const previousA = inputA.value;
       setField(inputA, inputB.value);
@@ -110,8 +110,7 @@ function compareMount(body) {
   sides.forEach(({ input }) => onRunKey(input, compare));
 
   body.append(
-    h('p', { class: 'tool-hint' }, 'Objects are compared by key, so key order never counts as a difference.'),
-    h('div', { class: 'io-grid' },
+    h('div', { class: 'io-grid compact' },
       ...sides.map(({ input, editor, notice }, index) => h('div', { class: 'io-box' },
         inputHeader(index === 0 ? 'JSON A' : 'JSON B', input, index === 1 ? [swap] : []),
         editor.root,
@@ -224,13 +223,14 @@ function prettifyMount(body) {
   const LAZY_CHAR_THRESHOLD = 200_000;
   const input = h('textarea', {
     class: 'io-textarea', spellcheck: 'false',
-    placeholder: '{"id":7,"name":"Ada Lovelace","roles":["admin","dev"],"address":{"city":"London","zip":"N1 9GU"},"active":true,"manager":null}',
+    placeholder: 'Paste JSON…',
+    'data-sample': '{"id":7,"name":"Ada Lovelace","roles":["admin","dev"],"address":{"city":"London","zip":"N1 9GU"},"active":true,"manager":null}',
   });
   const editor = codeEditor(input);
   const notice = errorNotice(editor);
   const indentSelect = h('select', { class: 'select select-sm', 'aria-label': 'Indent' },
     ...Object.keys(INDENTS).map((label) => h('option', {}, label)));
-  const tree = h('div', { class: 'json-tree', tabindex: '0', 'aria-label': 'Formatted JSON tree' });
+  const tree = h('div', { class: 'json-tree', tabindex: '0', 'aria-label': 'Formatted JSON tree', title: 'Click a line for its path. ↑ ↓ move, ← → fold and unfold.' });
   const pathLabel = h('code', { class: 'tree-path' });
   const shape = h('span', { class: 'tree-shape' });
   const foldNote = h('p', { class: 'tool-hint', hidden: true },
@@ -241,12 +241,12 @@ function prettifyMount(body) {
   let renderer = null;
   let selected = null;
 
-  const copyPath = h('button', {
-    class: 'btn-copy', type: 'button', html: icons.copy + ' Path', title: 'Copy the JSONPath of the selected line', disabled: true,
+  const copyPath = actionButton(icons.copy, 'Path', {
+    title: 'Copy the JSONPath of the selected line', disabled: true,
     onClick: async () => { await copyText(selected.dataset.path); toast(`Copied ${selected.dataset.path}`); },
   });
-  const copyValue = h('button', {
-    class: 'btn-copy', type: 'button', html: icons.copy + ' Value', title: 'Copy the value of the selected line', disabled: true,
+  const copyValue = actionButton(icons.copy, 'Value', {
+    title: 'Copy the value of the selected line', disabled: true,
     onClick: async () => {
       const value = renderer.valueOf(selected);
       await copyText(typeof value === 'string' ? value : formatJson(value, INDENTS[indentSelect.value]));
@@ -275,9 +275,18 @@ function prettifyMount(body) {
     group.classList.toggle('collapsed', !isOpen);
   };
 
+  // One fold button at a time: whichever does something to the tree as it is.
+  const expandAll = actionButton(icons.expand, 'Expand all', { onClick: () => setAllCollapsed(false) });
+  const collapseAll = actionButton(icons.collapse, 'Collapse all', { onClick: () => setAllCollapsed(true) });
+  const showFoldButton = (treeState) => {
+    expandAll.hidden = treeState !== 'collapsed';
+    collapseAll.hidden = treeState !== 'expanded';
+  };
+
   // Expanding a lazily-built tree reveals branches that do not exist yet, so
   // keep going until a pass stops turning up new ones.
   const setAllCollapsed = (collapsed) => {
+    showFoldButton(collapsed ? 'collapsed' : 'expanded');
     if (collapsed) {
       tree.querySelectorAll('.json-group').forEach((group) => group.classList.add('collapsed'));
       if (selected && !isVisible(selected)) select(tree.querySelector('.json-line'));
@@ -338,6 +347,7 @@ function prettifyMount(body) {
     tree.replaceChildren();
     select(null);
     foldNote.hidden = true;
+    showFoldButton('empty');
     if (!input.value.trim()) {
       notice.clear();
       showOutput('', undefined);
@@ -358,6 +368,7 @@ function prettifyMount(body) {
     tree.style.setProperty('--gutter-digits', String(Math.max(2, String(formattedLineCount(value)).length)));
     renderer.render(tree, { key: null, value, isLast: true, line: 1, path: '$' });
     foldNote.hidden = !lazy;
+    if (value !== null && typeof value === 'object') showFoldButton(lazy ? 'collapsed' : 'expanded');
   };
 
   indentSelect.addEventListener('change', () => {
@@ -368,8 +379,8 @@ function prettifyMount(body) {
 
   const controls = h('div', { class: 'io-actions' },
     indentSelect,
-    h('button', { class: 'btn-copy', type: 'button', onClick: () => setAllCollapsed(false) }, 'Expand all'),
-    h('button', { class: 'btn-copy', type: 'button', onClick: () => setAllCollapsed(true) }, 'Collapse all'),
+    expandAll,
+    collapseAll,
     downloadButton(() => 'formatted.json', () => pretty),
     copyButton(() => pretty),
   );
@@ -386,9 +397,9 @@ function prettifyMount(body) {
         foldNote,
       ),
     ),
-    h('p', { class: 'tool-hint' }, 'Click a line for its JSONPath. In the tree, ↑ ↓ move, ← → fold and unfold.'),
   );
   select(null);
+  showFoldButton('empty');
   input.focus();
 }
 
@@ -396,15 +407,15 @@ export default [
   {
     id: 'json-prettify', category: 'JSON', name: 'Prettify', title: 'JSON Prettify',
     keywords: 'format beautify pretty print viewer tree indent',
-    desc: 'Format JSON into a numbered, foldable tree. Click any line for its path; mistakes are pinpointed and often repairable.',
+    desc: 'Format JSON into a foldable tree with line numbers.',
     mount: prettifyMount,
   },
   {
     id: 'json-minify', category: 'JSON', name: 'Minify', title: 'JSON Minify',
     keywords: 'compress compact uglify whitespace',
-    desc: 'Strip all unnecessary whitespace to produce the smallest valid JSON.',
+    desc: 'Strip all whitespace from JSON.',
     mount: transformTool({
-      placeholder: '{\n  "name": "Alice",\n  "age": 30\n}',
+      placeholder: 'Paste JSON…', sample: '{\n  "name": "Alice",\n  "age": 30\n}',
       wrapInput: false, downloadName: 'minified.json', repair: repairJson,
       transform: (s) => JSON.stringify(parseJson(s)),
     }),
@@ -412,15 +423,15 @@ export default [
   {
     id: 'json-validate', category: 'JSON', name: 'Validate', title: 'JSON Validate',
     keywords: 'lint check syntax error',
-    desc: 'Check whether your JSON is valid as you type, with the exact line and column of any mistake.',
+    desc: 'Check JSON and see exactly where it breaks.',
     mount: validateMount,
   },
   {
     id: 'json-sort', category: 'JSON', name: 'Sort Keys', title: 'JSON Sort Keys',
     keywords: 'order alphabetical canonical normalize',
-    desc: 'Recursively sort every object key alphabetically. Arrays keep their order.',
+    desc: 'Sort object keys alphabetically, all the way down.',
     mount: transformTool({
-      placeholder: '{"b":2,"a":1,"c":{"z":1,"y":2}}',
+      placeholder: 'Paste JSON…', sample: '{"b":2,"a":1,"c":{"z":1,"y":2}}',
       wrapInput: false, wrapOutput: false, downloadName: 'sorted.json', repair: repairJson,
       transform: (s) => formatJson(sortDeep(parseJson(s))),
     }),
@@ -428,7 +439,7 @@ export default [
   {
     id: 'json-compare', category: 'JSON', name: 'Compare', title: 'JSON Compare',
     keywords: 'diff difference deep equal',
-    desc: 'Deep-compare two JSON documents. Green lines are added in the second; red lines are removed from the first.',
+    desc: 'Diff two JSON documents, ignoring key order.',
     mount: compareMount,
   },
 ];

@@ -24,7 +24,9 @@ A tool is an object in a `src/tools/*` module:
 - `sensitive: true` keeps the tool's input in sessionStorage only (gone when the tab closes). Use it for tools whose input is usually a credential.
 - A *new* `category` also needs an entry in `categoryIcons` (`ui/icons.js`), or its sidebar
   group shows a blank space where the glyph goes.
-- A placeholder doubles as the "Example" button's sample, so make it a realistic input.
+- Keep `desc` to one short sentence; it is the card text on the home page.
+- Placeholders are short hints ("Paste JSON…"). A realistic sample goes in `sample`
+  (`transformTool`) or a `data-sample` attribute, and the input gets an Example button.
 
 ## Where things live
 

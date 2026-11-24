@@ -20,7 +20,7 @@ Walk the diff against this list. Flag anything that fails; don't rubber-stamp.
 - Every tool object has `id`, `category`, `name`, `title`, `desc`, and `mount`.
 - `id` is unique (it doubles as the URL hash).
 - A new tool's module array is imported in `src/registry.js`.
-- Inputs use placeholders, not prefilled example values.
+- Inputs use short placeholder hints; samples live in `data-sample` / `sample`, not in the placeholder.
 
 ## Code quality (see the `clean-code` skill)
 - Names are full and descriptive; functions are verbs, values are nouns.

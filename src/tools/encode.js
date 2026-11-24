@@ -107,42 +107,42 @@ export default [
   {
     id: 'b64-encode', category: 'Encode', name: 'Base64 Encode', title: 'Base64 Encode',
     keywords: 'btoa base64 encode binary',
-    desc: 'Encode text to Base64 (UTF-8 safe).',
-    mount: transformTool({ placeholder: 'hello world', transform: utf8ToB64, pipeTo: 'b64-decode', pipeLabel: 'Decode' }),
+    desc: 'Encode text as Base64.',
+    mount: transformTool({ sample: 'hello world', transform: utf8ToB64, pipeTo: 'b64-decode', pipeLabel: 'Decode' }),
   },
   {
     id: 'b64-decode', category: 'Encode', name: 'Base64 Decode', title: 'Base64 Decode',
     keywords: 'atob base64 decode base64url',
-    desc: 'Decode Base64 back to text. The URL-safe alphabet and missing padding are accepted too.',
+    desc: 'Decode Base64, including the URL-safe kind, back to text.',
     mount: transformTool({
-      placeholder: 'aGVsbG8gd29ybGQ=',
+      placeholder: 'Paste Base64…', sample: 'aGVsbG8gd29ybGQ=',
       transform: b64ToUtf8, pipeTo: 'b64-encode', pipeLabel: 'Encode',
     }),
   },
   {
     id: 'url-encode', category: 'Encode', name: 'URL Encode', title: 'URL Encode',
     keywords: 'percent encode encodeURIComponent query escape',
-    desc: 'Percent-encode a string for safe use in a URL.',
-    mount: transformTool({ placeholder: 'name=John Doe & co', transform: (s) => encodeURIComponent(s), pipeTo: 'url-decode', pipeLabel: 'Decode' }),
+    desc: 'Percent-encode text for use in a URL.',
+    mount: transformTool({ sample: 'name=John Doe & co', transform: (text) => encodeURIComponent(text), pipeTo: 'url-decode', pipeLabel: 'Decode' }),
   },
   {
     id: 'url-decode', category: 'Encode', name: 'URL Decode', title: 'URL Decode',
     keywords: 'percent decode decodeURIComponent unescape',
-    desc: 'Decode a percent-encoded string.',
-    mount: transformTool({ placeholder: 'name%3DJohn%20Doe', transform: decodePercent, pipeTo: 'url-encode', pipeLabel: 'Encode' }),
+    desc: 'Decode percent-encoded text.',
+    mount: transformTool({ sample: 'name%3DJohn%20Doe', transform: decodePercent, pipeTo: 'url-encode', pipeLabel: 'Encode' }),
   },
   {
     id: 'html-encode', category: 'Encode', name: 'HTML Escape', title: 'HTML Escape',
     keywords: 'entities encode sanitize xss',
-    desc: 'Escape characters that are special in HTML (&, <, >, ", \').',
-    mount: transformTool({ placeholder: '<div class="x">Tom & Jerry</div>', transform: escapeHtml, pipeTo: 'html-decode', pipeLabel: 'Unescape' }),
+    desc: 'Escape the characters that are special in HTML.',
+    mount: transformTool({ sample: '<div class="x">Tom & Jerry</div>', transform: escapeHtml, pipeTo: 'html-decode', pipeLabel: 'Unescape' }),
   },
   {
     id: 'html-decode', category: 'Encode', name: 'HTML Unescape', title: 'HTML Unescape',
     keywords: 'entities decode',
-    desc: 'Turn HTML entities back into their characters.',
+    desc: 'Turn HTML entities back into characters.',
     mount: transformTool({
-      placeholder: '&lt;div&gt;Tom &amp; Jerry&lt;/div&gt;',
+      sample: '&lt;div&gt;Tom &amp; Jerry&lt;/div&gt;',
       transform: (s) => {
         const doc = new DOMParser().parseFromString(s, 'text/html');
         return doc.documentElement.textContent;
@@ -153,9 +153,9 @@ export default [
   {
     id: 'jwt-decode', category: 'Encode', name: 'JWT Decode', title: 'JWT Decode', sensitive: true,
     keywords: 'json web token bearer auth claims oauth',
-    desc: 'Decode a JSON Web Token into its header, payload and readable expiry times. (Signature is not verified.)',
+    desc: 'Read a JWT\'s header, payload and expiry. The signature isn\'t checked.',
     mount: transformTool({
-      placeholder: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0IiwibmFtZSI6IkFkYSBMb3ZlbGFjZSIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxOTAwMDAwMDAwfQ.c2lnbmF0dXJl',
+      placeholder: 'Paste a JWT…', sample: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0IiwibmFtZSI6IkFkYSBMb3ZlbGFjZSIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxOTAwMDAwMDAwfQ.c2lnbmF0dXJl',
       wrapOutput: false,
       transform: decodeJwt,
     }),

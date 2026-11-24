@@ -351,19 +351,19 @@ export default [
   {
     id: 'image-exif', category: 'Image', name: 'EXIF Viewer', title: 'Image Metadata Viewer',
     keywords: 'photo gps camera xmp metadata',
-    desc: 'See the EXIF, GPS and XMP metadata stored in a photo.',
+    desc: 'See the EXIF, GPS and XMP data inside a photo.',
     mount: exifMount,
   },
   {
     id: 'image-clean', category: 'Image', name: 'Metadata Cleaner', title: 'Image Metadata Cleaner',
     keywords: 'strip exif gps privacy remove',
-    desc: 'Remove EXIF, GPS and other metadata from a photo, without re-encoding it.',
+    desc: 'Strip EXIF, GPS and other metadata from a photo without re-encoding it.',
     mount: cleanerMount,
   },
   {
     id: 'image-convert', category: 'Image', name: 'Format Converter', title: 'Image Format Converter',
     keywords: 'png jpeg webp resize compress',
-    desc: 'Convert between PNG, JPEG and WebP. Resize and set quality if you need to.',
+    desc: 'Convert images between PNG, JPEG and WebP, with optional resizing.',
     mount: converterMount,
   },
 ];

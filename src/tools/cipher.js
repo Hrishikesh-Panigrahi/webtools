@@ -1,6 +1,6 @@
 import { h } from '../ui/dom.js';
 import { copyButton } from '../ui/buttons.js';
-import { transformTool } from '../ui/panel.js';
+import { transformTool, inputHeader } from '../ui/panel.js';
 
 const ALPHABET_LENGTH = 26;
 
@@ -28,7 +28,7 @@ function caesarMount(body) {
   shiftField.addEventListener('input', () => { shiftSlider.value = normalizeShift(Number(shiftField.value) || 0); run(); });
 
   body.append(
-    h('div', { class: 'io-box' }, h('div', { class: 'io-label' }, 'Text'), input),
+    h('div', { class: 'io-box' }, inputHeader('Text', input), input),
     h('div', { class: 'tool-actions' },
       h('span', { class: 'io-label' }, 'Shift'), shiftSlider, shiftField,
     ),
@@ -41,11 +41,11 @@ function caesarMount(body) {
 }
 
 export default [
-  { id: 'cipher-caesar', category: 'Cipher', name: 'Caesar', title: 'Caesar Cipher', keywords: 'shift rotate', desc: 'Shift each letter by a fixed amount. Use a negative shift to decode.', mount: caesarMount },
+  { id: 'cipher-caesar', category: 'Cipher', name: 'Caesar', title: 'Caesar Cipher', keywords: 'shift rotate', desc: 'Shift letters by a fixed amount. A negative shift decodes.', mount: caesarMount },
   {
     id: 'cipher-rot13', category: 'Cipher', name: 'ROT13', title: 'ROT13',
-    desc: 'Rotate letters by 13. Run it again to decode.',
+    desc: 'Rotate letters by 13. Run it twice to get the original back.',
     keywords: 'rotate obfuscate',
-    mount: transformTool({ placeholder: 'Hello, World', transform: (text) => shiftLetters(text, 13) }),
+    mount: transformTool({ sample: 'Hello, World', transform: (text) => shiftLetters(text, 13) }),
   },
 ];
